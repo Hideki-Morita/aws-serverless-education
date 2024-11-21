@@ -48,17 +48,17 @@ Skills in:
     - [Building a Scalable and Secure **Multi-VPC** AWS Network Infrastructure](https://docs.aws.amazon.com/pdfs/whitepapers/latest/building-scalable-secure-multi-vpc-network-infrastructure/building-scalable-secure-multi-vpc-network-infrastructure.pdf)
     - [Amazon Virtual Private Cloud Connectivity Options](https://d1.awsstatic.com/whitepapers/aws-amazon-vpc-connectivity-options.pdf)
 - 2. Evaluating **connectivity options** for on-premises, co-location, and cloud integration  
-  - **`REL02-BP02`**: Provision redundant **connectivity between** private networks in the cloud and on-premises environments.  
+  - **`REL02-BP02`**(High): Provision redundant **connectivity between** private networks in the cloud and on-premises environments.  
 - 3. Selecting AWS Regions and Availability Zones based on **network and latency requirements**
   - **`PERF04-BP06`**: Choose your workload's location based on **network requirements**
-    - `REL10-BP01`: Deploy the workload to multiple locations 
-    - `PERF04-BP02`: Evaluate available networking features 
+    - `REL10-BP01`(High): Deploy the workload to multiple locations 
+    - `PERF04-BP02`(High): Evaluate available networking features 
 - 4. Troubleshooting traffic flows by using AWS tools
   - **`PERF04-BP07`**: Optimize network configuration based on metrics 
     - [AWS re:Invent 2020 – Monitoring and troubleshooting network trafic](https://www.youtube.com/watch?v=Ed09ReWRQXc)  
 - 5. Using service endpoints for service integrations 
-  - **`SEC05-BP01`**: Create network layers
-  - **`SEC05-BP02`**: Control traffic flow within your network layers.
+  - **`SEC05-BP01`**(High): Create network layers
+  - **`SEC05-BP02`**(High): Control traffic flow within your network layers.
 
 <br>
 
