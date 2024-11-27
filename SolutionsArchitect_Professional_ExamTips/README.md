@@ -1,4 +1,4 @@
-## 🪩 Relationship between SAP Exam and Well-Architected Framework
+## 🪩 Relationship between SAP Exam(SAP-C02) and Well-Architected Framework
 
 <br>
 
@@ -27,7 +27,7 @@
 
 Here’s the relational list mapping all domains and task statements from the **AWS Certified Solutions Architect Professional** (SAP-C02) Exam Guide to the <mark>**AWS Well-Architected Framework**</mark> principles:
 
-- [🪩 Relationship between SAP Exam and Well-Architected Framework](#-relationship-between-sap-exam-and-well-architected-framework)
+- [🪩 Relationship between SAP Exam(SAP-C02) and Well-Architected Framework](#-relationship-between-sap-examsap-c02-and-well-architected-framework)
 	- [☻ Domain 1: Design Solutions for Organizational Complexity](#-domain-1-design-solutions-for-organizational-complexity)
 		- [✰ Task Statement 1.1: Architect _network connectivity_ strategies.](#-task-statement-11-architect-network-connectivity-strategies)
 		- [✰ Task Statement 1.2: Prescribe _security_ controls.](#-task-statement-12-prescribe-security-controls)
