@@ -22,9 +22,19 @@
 )
   - [Sustainability Pillar](https://docs.aws.amazon.com/pdfs/wellarchitected/latest/sustainability-pillar/wellarchitected-sustainability-pillar.pdf)
 
+---
+
 <br>
 
 Here’s the relational list mapping all domains and task statements from the **AWS Certified Solutions Architect Professional** (SAP-C02) Exam Guide to the <mark>**AWS Well-Architected Framework**</mark> principles:
+
+- [🪩 Relationship between SAP Exam and Well-Architected Framework](#-relationship-between-sap-exam-and-well-architected-framework)
+	- [☻ Domain 1: Design Solutions for Organizational Complexity](#-domain-1-design-solutions-for-organizational-complexity)
+		- [✰ Task Statement 1.1: Architect _network connectivity_ strategies.](#-task-statement-11-architect-network-connectivity-strategies)
+		- [✰ Task Statement 1.2: Prescribe _security_ controls.](#-task-statement-12-prescribe-security-controls)
+		- [✰ Task Statement 1.3: Design _reliable_ and resilient architectures.](#-task-statement-13-design-reliable-and-resilient-architectures)
+		- [✰ Task Statement 1.4: Design a multi-account AWS environment.](#-task-statement-14-design-a-multi-account-aws-environment)
+		- [✰ Task Statement 1.5: Determine cost optimization and visibility strategies.](#-task-statement-15-determine-cost-optimization-and-visibility-strategies)
 
 ---
 
@@ -38,143 +48,120 @@ Here’s the relational list mapping all domains and task statements from the **
 
 #### ✰ Task Statement 1.1: Architect _network connectivity_ strategies.
 
-<br>
+- **`REL02-BP01`**(High👀): Use highly available **network connectivity** for your workload public endpoints
 
-- **`REL02-BP01`**(High👀): Use highly available _network connectivity_ for your workload public endpoints
+|Skills|Related to the best practices of WA-Framework|
+|---|---|
+| 1. Evaluating connectivity options for **multiple VPCs**| - **`REL02-BP03`**: Ensure IP subnet allocation accounts for expansion and availability.|  
+|| - - [Building a Scalable and Secure **Multi-VPC** AWS Network Infrastructure](https://docs.aws.amazon.com/pdfs/whitepapers/latest/building-scalable-secure-multi-vpc-network-infrastructure/building-scalable-secure-multi-vpc-network-infrastructure.pdf)|
+|| - - [Amazon Virtual Private Cloud Connectivity Options](https://d1.awsstatic.com/whitepapers/aws-amazon-vpc-connectivity-options.pdf)|
+| 2. Evaluating **connectivity options** for on-premises, co-location, and cloud integration| - **`REL02-BP02`**(High👀): Provision redundant **connectivity between** private networks in the cloud and on-premises environments.|
+| 3. **Selecting AWS Regions** and Availability Zones based on **network and latency requirements**| - **`PERF04-BP06`**: **Choose your workload's location** based on **network requirements**|
+|| - - `REL10-BP01`(High👀): Deploy the workload to multiple locations| 
+|| - - `PERF04-BP02`(High👀): Evaluate available networking features|
+|| - - `SUS01-BP01`: **Choose Region** based on both business requirements and sustainability goals|
+|| - - `SUS02-BP04`: Optimize geographic placement of workloads based on their **networking requirements**|
+| 4. **Troubleshooting traffic** flows by using AWS tools| - **`PERF04-BP07`**: Optimize network configuration based on metrics |
+|| - - [AWS re:Invent 2020 – Monitoring and troubleshooting network trafic](https://www.youtube.com/watch?v=Ed09ReWRQXc) |
+| 5. Using service endpoints for service integrations | - **`SEC05-BP01`**(High👀): Create network layers|
+|| - **`SEC05-BP02`**(High👀): Control traffic flow within your network layers.|
 
-Skills in:  
-- 1. Evaluating connectivity options for **multiple VPCs**  
-  - **`REL02-BP03`**: Ensure IP subnet allocation accounts for expansion and availability.  
-    - [Building a Scalable and Secure **Multi-VPC** AWS Network Infrastructure](https://docs.aws.amazon.com/pdfs/whitepapers/latest/building-scalable-secure-multi-vpc-network-infrastructure/building-scalable-secure-multi-vpc-network-infrastructure.pdf)
-    - [Amazon Virtual Private Cloud Connectivity Options](https://d1.awsstatic.com/whitepapers/aws-amazon-vpc-connectivity-options.pdf)
-- 2. Evaluating **connectivity options** for on-premises, co-location, and cloud integration  
-  - **`REL02-BP02`**(High👀): Provision redundant **connectivity between** private networks in the cloud and on-premises environments.  
-- 3. Selecting AWS Regions and Availability Zones based on **network and latency requirements**
-  - **`PERF04-BP06`**: Choose your workload's location based on **network requirements**
-    - `REL10-BP01`(High👀): Deploy the workload to multiple locations 
-    - `PERF04-BP02`(High👀): Evaluate available networking features 
-- 4. Troubleshooting traffic flows by using AWS tools
-  - **`PERF04-BP07`**: Optimize network configuration based on metrics 
-    - [AWS re:Invent 2020 – Monitoring and troubleshooting network trafic](https://www.youtube.com/watch?v=Ed09ReWRQXc)  
-- 5. Using service endpoints for service integrations 
-  - **`SEC05-BP01`**(High👀): Create network layers
-  - **`SEC05-BP02`**(High👀): Control traffic flow within your network layers.
+---
 
 <br>
 
-Task Statement 1.2: Prescribe security controls.
+#### ✰ Task Statement 1.2: Prescribe _security_ controls.
 
-Skills in:
-	- Designing access control mechanisms
-	- SEC01-BP03: Implement least privilege access control for all systems.
-	- Protecting data at rest and in transit
-	- SEC02-BP04: Use AWS-managed encryption wherever possible.
-	- Monitoring and incident response
-	- SEC03-BP05: Define and practice incident response procedures.
+- Based on [**Security** Pillar](https://docs.aws.amazon.com/pdfs/wellarchitected/latest/security-pillar/wellarchitected-security-pillar.pdf)
 
-Task Statement 1.3: Design reliable and resilient architectures.
+|Skills|Related to the best practices of WA-Framework|
+|---|---|
+| 1. Evaluating **cross-account access** management| - **`SEC03-BP07`**: Analyze public and **cross-account access**|
+|| - **`SEC02-BP04`**(High👀): Rely on a centralized identity provider|
+|| - **`SEC08-BP04`**(High👀): Enforce access control|
+| 2. Integrating with **third-party** identity providers| - **`SEC03-BP09`**: Share resources securely with a **third party**|
+| 3. Deploying **encryption** strategies for **data at rest** and **data in transit**|Protecting **data at rest**|
+|| - **`SEC08-BP01`**(High👀): Implement secure key management|
+|| - **`SEC08-BP02`**(High👀): Enforce **encryption** at rest|
+|| - **`SEC08-BР03`**: Automate data at rest protection|
+|| - **`SEC08-BP04`**(High👀): Enforce access control|
+||Protecting **data in transit**|
+|| - **`SEC09-BP01`**(High👀): Implement secure key and certificate management|
+|| - **`SEC09-BP02`**(High👀): Enforce **encryption** in transit|
+|| - **`SEC09-BP03`**: Authenticate network communications|
+| 4. Developing a strategy for centralized **security event** notifications and auditing| - **`SEC04-BP02`**: Capture logs, findings, and metrics in standardized locations|
+|| - **`SEC04-BP03`**: Correlate and enrich **security alerts**|
 
-Skills in:
-	- Implementing fault-tolerant systems
-	- REL01-BP01: Design for failure by using redundancy and automatic recovery.
-	- Applying disaster recovery techniques
-	- REL05-BP01: Use a disaster recovery plan with clearly defined recovery objectives.
+---
 
-Task Statement 1.4: Design a multi-account AWS environment.
+<br>
 
-Skills in:
-	- Structuring accounts using AWS Organizations
-	- OP04-BP03: Use a multi-account strategy for workload isolation.
-	- Centralized governance
-	- SEC05-BP02: Aggregate logs across accounts for centralized monitoring.
+#### ✰ Task Statement 1.3: Design _reliable_ and resilient architectures.
 
-Task Statement 1.5: Determine cost optimization and visibility strategies.
+- Based on [**Reliability** Pillar](https://docs.aws.amazon.com/pdfs/wellarchitected/latest/reliability-pillar/wellarchitected-reliability-pillar.pdf)
 
-Skills in:
-	- Optimizing resource utilization
-	- COST01-BP01: Use Auto Scaling to match capacity to demand.
-	- Tracking costs using tags
-	- COST02-BP02: Implement cost allocation tags to track resource usage.
-	- Leveraging reserved instances
-	- COST03-BP03: Use Reserved Instances or Savings Plans for predictable workloads.
+|Skills|Related to the best practices of WA-Framework|
+|---|---|
+| 1. Designing **disaster recovery** solutions based on **RTO** and **RPO** requirements|Plan for **Disaster Recovery** (DR)|
+|| - **`REL13-BP01`**(High👀): Define **recovery objectives** for downtime and data loss|
+|| - **`REL13-BP02`**(High👀): Use defined recovery strategies to meet the **recovery objectives**|
+|| - **`REL13-BP03`**(High👀): Test disaster recovery implementation to validate the implementation|
+|| - **`REL13-BP04`**(High👀): Manage configuration drift at the **DR** site or Region|
+| 2. Implementing architectures to **automatically recover** from failure| - **`REL13-BP05`**: **Automate recovery**|
+| 3. Developing the optimal architecture by considering **scale-up** and **scale-out** options| - **`REL07-BP01`**(High👀): Use automation when obtaining or **scaling** resources|
+|| - - `SUS02-BP01`: Scale workload infrastructure dynamically|
+| 4. Designing an effective **backup** and restoration strategy|**Back up** data|
+|| - **`REL09-BP01`**(High👀): Identify and **back up** all data that needs to be backed up, or reproduce the datafrom sources|
+|| - **`REL09-BP02`**(High👀): Secure and encrypt **backups**|
+|| - **`REL09-BP03`**: Perform data **backup** automatically|
+|| - **`REL09-BP04`**: Perform periodic recovery of the data to verify **backup** integrity and processes|
 
-Domain 2: Design for New Solutions
+---
 
-Task Statement 2.1: Define secure application architectures.
+<br>
 
-Skills in:
-	- Implementing IAM for secure access
-	- SEC01-BP01: Manage application permissions securely using roles and policies.
-	- Encrypting data and monitoring access
-	- SEC02-BP03: Enable logging for data access monitoring.
+#### ✰ Task Statement 1.4: Design a multi-account AWS environment.
 
-Task Statement 2.2: Design high-performance architectures.
+- Based on [**Security** Pillar](https://docs.aws.amazon.com/pdfs/wellarchitected/latest/security-pillar/wellarchitected-security-pillar.pdf)
+  - **`SEC01-BP01`**(High👀) and **`SEC01-BP02`**(High👀):<br> While it applies to all three skills, it’s because  foundational to [**Multi-account strategy**](https://docs.aws.amazon.com/pdfs/whitepapers/latest/organizing-your-aws-environment/organizing-your-aws-environment.pdf) and unavoidable.
 
-Skills in:
-	- Optimizing compute resources
-	- PERF02-BP01: Choose the optimal compute service for your workload.
-	- Implementing efficient data storage
-	- PERF03-BP02: Use SSDs or memory-optimized instances where applicable.
-	- Improving latency with caching
-	- PERF04-BP02: Use caching to improve response times.
+|Skills|Related to the best practices of WA-Framework|
+|---|---|
+| 1. Evaluating the most appropriate account structure for organizational requirements| AWS account management and separation|
+|| - **`SEC01-BP01`**(High👀): Separate workloads using accounts|
+|| - **`SEC01-BP02`**(High👀): Secure account root user and properties|
+|| - - **`SEC03-BP03`**: Establish emergency access process|
+|| - - **`SEC03-BP05`**: Define permission guardrails for your organization|
+|| - - **`SEC03-BP07`**: Analyze public and cross-account access|
+|| - - **`SEC08-BP01`**(High👀): Implement secure key management|
+|| - - **`OPS05-BP08`**: Use multiple environments|
+|| - - **`SEC10-BP03`**: Prepare forensic capabilities|
+| 2. Recommending a strategy for **central logging** and **event notifications**| Configure services and resources centrally|
+|| - **`SEC04-BP01`** Configure service and application logging|
+|| - **`SEC04-BP02`** Capture logs, findings, and metrics in standardized locations|
+|| - - `SEC01-BP01`(High👀): Separate workloads using accounts|
+|| - - `SEC06-BP01`(High👀): Perform vulnerability management|
+|| - - `OPS08-BP01`: Analyze workload metrics|
+| 3. Developing a **multi-account** governance model| - **`SEC01-BP01`**(High👀): **Separate workloads** using accounts|
+|| - **`SEC10-BP03`**: Prepare forensic capabilities|
 
-Task Statement 2.3: Architect cost-efficient solutions.
+---
 
-Skills in:
-	- Selecting storage classes
-	- COST01-BP04: Optimize storage by selecting the right class and configuration.
-	- Minimizing transfer costs
-	- COST02-BP03: Use Amazon CloudFront to reduce data transfer expenses.
+<br>
 
-Task Statement 2.4: Design sustainable architectures.
+#### ✰ Task Statement 1.5: Determine cost optimization and visibility strategies.
 
-Skills in:
-	- Reducing energy consumption
-	- SUS01-BP02: Use serverless architectures to minimize resource usage.
-	- Deploying in renewable energy regions
-	- SUS02-BP03: Utilize regions with AWS renewable energy initiatives.
+- Based on [**Cost Optimization** Pillar](https://docs.aws.amazon.com/pdfs/wellarchitected/latest/cost-optimization-pillar/wellarchitected-cost-optimization-pillar.pdf)
 
-Domain 3: Continuous Improvement for Existing Solutions
+|Skills|Related to the best practices of WA-Framework|
+|---|---|
+| 1. **Monitoring cost** and usage with AWS tools| - **`COST01-BP06`**: **Monitor cost** proactively|
+| 2. Developing an effective **tagging strategy** that maps costs to business units| - **`COST03-BP05`**(High👀): Configure billing and cost management tools|
+| 3. Understanding how **purchasing options** affect cost and performance|Select **the best pricing model**|
+|| - **`COST07-BP01`**(High👀): Perform **pricing model** analysis|
+|| - **`COST07-BP02`**: Choose Regions based on cost|
+|| - **`COST07-BP03`**: Select third-party agreements with cost-efficient terms|
+|| - **`COST07-BP04`**: Implement **pricing models** for all components of this workload|
+|| - **`COST07-BP05`**: Perform **pricing model** analysis at the management account level|
 
-Task Statement 3.1: Implement secure and compliant workloads.
-
-Skills in:
-	- Automating compliance checks
-	- SEC04-BP01: Use AWS Config to automate compliance checks.
-	- Protecting sensitive workloads
-	- SEC02-BP02: Apply appropriate encryption and data protection.
-
-Task Statement 3.2: Optimize workload performance.
-
-Skills in:
-	- Analyzing and improving system performance
-	- PERF01-BP03: Continuously monitor and optimize your workloads.
-	- Optimizing storage solutions
-	- PERF03-BP03: Use lifecycle policies for storage optimization.
-
-Task Statement 3.3: Implement cost optimization strategies.
-
-Skills in:
-	- Rightsizing compute resources
-	- COST01-BP02: Select the appropriate instance size for your workload.
-	- Using cost monitoring tools
-	- COST02-BP01: Leverage AWS Cost Explorer for visibility into usage patterns.
-
-Domain 4: Accelerate Workload Migration and Modernization
-
-Task Statement 4.1: Design migration strategies.
-
-Skills in:
-	- Using migration tools
-	- REL04-BP03: Use AWS Migration Hub to orchestrate migrations.
-	- Minimizing downtime
-	- REL04-BP02: Use failover or replication strategies to reduce migration impacts.
-
-Task Statement 4.2: Modernize legacy workloads.
-
-Skills in:
-	- Rearchitecting applications for cloud-native services
-	- PERF02-BP04: Modernize applications by leveraging managed services.
-	- Adopting serverless and microservices
-	- SUS01-BP01: Transition workloads to serverless for better efficiency.
-
+---
