@@ -10,7 +10,7 @@
 
 ![image](../assets/AWS_WA_Framework.jpeg)
 
-- **Immediate Operational Necessity** (`SEC` and `OE` are non-negotiable and foundational for immediate operational integrity and excellence.)
+- **Immediate Operational Necessity** (`SEC` and `OE` are **non-negotiable** and foundational for immediate operational integrity and excellence.)
   - [Security Pillar](https://docs.aws.amazon.com/pdfs/wellarchitected/latest/security-pillar/wellarchitected-security-pillar.pdf)
   - [Operational Excellence Pillar](https://docs.aws.amazon.com/pdfs/wellarchitected/latest/operational-excellence-pillar/wellarchitected-operational-excellence-pillar.pdf)
 - **Balanced Optimization** (`REL`, `PERF`, and `COST` are balanced against each other, often with **trade-offs**, to meet the specific needs and goals of the business.
@@ -18,8 +18,7 @@
   - [Performance Efficiency Pillar](https://docs.aws.amazon.com/pdfs/wellarchitected/latest/performance-efficiency-pillar/wellarchitected-performance-efficiency-pillar.pdf)
   - [Reliability Pillar](https://docs.aws.amazon.com/pdfs/wellarchitected/latest/reliability-pillar/wellarchitected-reliability-pillar.pdf)
   - [Cost Optimization Pillar](https://docs.aws.amazon.com/pdfs/wellarchitected/latest/cost-optimization-pillar/wellarchitected-cost-optimization-pillar.pdf)
-- **Strategic Importance** (**Sustainability** is a strategic imperative that influences long-term planning and reflects a commitment to responsible business practices.
-)
+- **Strategic Importance** (**Sustainability** is a strategic imperative that influences long-term planning and reflects a commitment to responsible business practices.)
   - [Sustainability Pillar](https://docs.aws.amazon.com/pdfs/wellarchitected/latest/sustainability-pillar/wellarchitected-sustainability-pillar.pdf)
 
 ---
