@@ -34,6 +34,8 @@ Here’s the relational list mapping all domains and task statements from the **
 		- [✰ Task Statement 1.3: Design _reliable_ and resilient architectures.](#-task-statement-13-design-reliable-and-resilient-architectures)
 		- [✰ Task Statement 1.4: Design a multi-account AWS environment.](#-task-statement-14-design-a-multi-account-aws-environment)
 		- [✰ Task Statement 1.5: Determine cost optimization and visibility strategies.](#-task-statement-15-determine-cost-optimization-and-visibility-strategies)
+	- [☻ Domain 2: Design for New Solutions](#-domain-2-design-for-new-solutions)
+		- [✰ Task Statement 2.1: Design a deployment strategy to meet business requirements.](#-task-statement-21-design-a-deployment-strategy-to-meet-business-requirements)
 
 ---
 
@@ -47,7 +49,7 @@ Here’s the relational list mapping all domains and task statements from the **
 
 #### ✰ Task Statement 1.1: Architect _network connectivity_ strategies.
 
-- **`REL02-BP01`**(High👀): Use highly available **network connectivity** for your workload public endpoints
+- Core BP is **`REL02-BP01`**(High👀): Use highly available **network connectivity** for your workload public endpoints
 
 |Skills|Related to the best practices of WA-Framework|
 |---|---|
@@ -122,7 +124,7 @@ Here’s the relational list mapping all domains and task statements from the **
 #### ✰ Task Statement 1.4: Design a multi-account AWS environment.
 
 - Based on [**Security** Pillar](https://docs.aws.amazon.com/pdfs/wellarchitected/latest/security-pillar/wellarchitected-security-pillar.pdf)
-  - **`SEC01-BP01`**(High👀) and **`SEC01-BP02`**(High👀):<br> While it applies to all three skills, it’s because  foundational to [**Multi-account strategy**](https://docs.aws.amazon.com/pdfs/whitepapers/latest/organizing-your-aws-environment/organizing-your-aws-environment.pdf) and unavoidable.
+  - Core BPs are **`SEC01-BP01`**(High👀) and **`SEC01-BP02`**(High👀):<br> While it applies to all three skills, it’s because  foundational to [**Multi-account strategy**](https://docs.aws.amazon.com/pdfs/whitepapers/latest/organizing-your-aws-environment/organizing-your-aws-environment.pdf) and unavoidable.
 
 |Skills|Related to the best practices of WA-Framework|
 |---|---|
@@ -162,5 +164,44 @@ Here’s the relational list mapping all domains and task statements from the **
 || - **`COST07-BP03`**: Select third-party agreements with cost-efficient terms|
 || - **`COST07-BP04`**: Implement **pricing models** for all components of this workload|
 || - **`COST07-BP05`**: Perform **pricing model** analysis at the management account level|
+
+---
+
+<br>
+
+### ☻ Domain 2: Design for New Solutions
+
+---
+
+<br>
+
+#### ✰ Task Statement 2.1: Design a deployment strategy to meet business requirements.
+
+- Core BP is **`REL08-BP04`**: Deploy using immutable infrastructure
+
+|Skills|Related to the best practices of WA-Framework|
+|---|---|
+| 1. **Determining an application** or **upgrade** path for new services and features| - **`RELO8-BP04`**: Deploy using immutable infrastructure|
+|| - **`SUS06-BP03`**: Keep your workload **up-to-date**|
+|| Organization priorities|
+|| - - **`OPS01-BP01`**(High👀): **Evaluate external customer needs**|
+|| - - **`OPS01-BP02`**(High👀): **Evaluate internal customer needs**|
+|| - - **`OPS01-BP04`**(High👀): **Evaluate compliance requirements**|
+|| - - `OPS01-BP05`: Evaluate threat landscape|
+|| - - `OPS01-BP06`: Evaluate tradeoffs while managing benefits and risks|
+| 2. Selecting services to develop **deployment strategies** and implement appropriate rollback mechanisms| - **`OPS05-BP04`**: Use build and **deployment** management systems|
+|| - **`OPS06-BP03`**: Employ safe **deployment strategies**|
+|| - **`REL07-BP01`**(High👀): Use automation when obtaining or scaling resources|
+|| - **`REL08-BP04`**: **Deploy** using immutable infrastructure|
+|| - **`REL08-BP05`**: **Deploy** changes with automation|
+|| - - `**OPS06-BP04`**: Automate testing and **rollback**|
+| 3. Adopting **managed services** as needed to reduce infrastructure provisioning and **patching** overhead| - **`SEC01-BP05`**: Reduce security management scope|
+|| - **`SEC06-BP01`**(High👀): Perform vulnerability management|
+|| - **`SUS05-BP03`**: Use managed services|
+| 4. Making advanced technologies accessible by delegating **complex development** and deployment tasks to AWS| Mitigate deployment risks|
+|| - - **`OPS06-BP01`**(High👀): Plan for unsuccessful changes|
+|| - - **`OPS06-BP02`**(High👀): Test deployments|
+|| - - **`OPS06-BP03`**: Employ safe **deployment** strategies|
+|| - - **`OPS06-BP04`**: Automate testing and **rollback**|
 
 ---
