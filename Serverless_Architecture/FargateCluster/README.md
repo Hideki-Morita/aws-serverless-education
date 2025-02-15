@@ -62,7 +62,7 @@ The stack includes:
 |---|
 |![image](../../assets/FargateCluster-HighLevel-Overview.jpg)|
 
-|Overview|
+|Details|
 |---|
 |![image](../../assets/FargateCluster-Overview.jpg?)|
 
@@ -238,12 +238,26 @@ This isolates dependencies required for this project from your **global Python e
 
 📌 Clone the Repository & Set Up the Virtual Environment (**Using `venv` (Python 3.3+)**)
 
+<br>
+
 1. 🐾 **Navigate to your working directory & clone the repository:**
+
+- 📌 e.g., <mark>**On 🔵CloudShell**</mark> (AWS managed network)
 
 ```bash session
 # cd /path/to/your/project
 # git clone https://github.com/Hideki-Morita/aws-serverless-education.git
-# cd Serverless_Architecture/FargateCluster
+# cd serverless-education/Serverless_Architecture/FargateCluster
+```
+
+>```console
+>Cloning into 'aws-serverless-education'...
+>remote: Enumerating objects: 69, done.
+>remote: Counting objects: 100% (69/69), done.
+>remote: Compressing objects: 100% (41/41), done.
+>remote: Total 69 (delta 22), reused 59 (delta 12), pack-reused 0 (from 0)
+>Receiving objects: 100% (69/69), 885.91 KiB | 15.27 MiB/s, done.
+>Resolving deltas: 100% (22/22), done.
 ```
 
 - Create a virtual environment:
@@ -268,8 +282,6 @@ This isolates dependencies required for this project from your **global Python e
   PS1> awsvenv\Scripts\activate
   ```
 
-<br>
-
 ✅ Once activated, your terminal will show something like this:  
 
 >```console
@@ -290,6 +302,43 @@ This isolates dependencies required for this project from your **global Python e
 
 <summary>📖An example of output</summary>
 
+>```console
+>Collecting boto3
+>  Downloading boto3-1.36.21-py3-none-any.whl (139 kB)
+>     |████████████████████████████████| 139 kB 3.6 MB/s            
+>Collecting botocore
+>  Downloading botocore-1.36.21-py3-none-any.whl (13.4 MB)
+>     |████████████████████████████████| 13.4 MB 9.5 MB/s            
+>Collecting aws-lambda-powertools
+>  Downloading aws_lambda_powertools-3.6.0-py3-none-any.whl (768 kB)
+>     |████████████████████████████████| 768 kB 85.6 MB/s            
+>Collecting aws-xray-sdk
+>  Downloading aws_xray_sdk-2.14.0-py2.py3-none-any.whl (101 kB)
+>     |████████████████████████████████| 101 kB 10.3 MB/s           
+>Collecting s3transfer<0.12.0,>=0.11.0
+>  Downloading s3transfer-0.11.2-py3-none-any.whl (84 kB)
+>     |████████████████████████████████| 84 kB 4.4 MB/s             
+>Collecting jmespath<2.0.0,>=0.7.1
+>  Downloading jmespath-1.0.1-py3-none-any.whl (20 kB)
+>Collecting urllib3<1.27,>=1.25.4
+>  Downloading urllib3-1.26.20-py2.py3-none-any.whl (144 kB)
+>     |████████████████████████████████| 144 kB 9.9 MB/s            
+>Collecting python-dateutil<3.0.0,>=2.1
+>  Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+>     |████████████████████████████████| 229 kB 21.7 MB/s            
+>Collecting typing-extensions<5.0.0,>=4.11.0
+>  Downloading typing_extensions-4.12.2-py3-none-any.whl (37 kB)
+>Collecting wrapt
+>  Downloading wrapt-1.17.2-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl (82 kB)
+>     |████████████████████████████████| 82 kB 1.3 MB/s             
+>Collecting six>=1.5
+>  Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+>Installing collected packages: six, urllib3, python-dateutil, jmespath, botocore, wrapt, typing-extensions, s3transfer, boto3, aws-xray-sdk, >aws-lambda-powertools
+>Successfully installed aws-lambda-powertools-3.6.0 aws-xray-sdk-2.14.0 boto3-1.36.21 botocore-1.36.21 jmespath-1.0.1 python-dateutil-2.9.0.post0 >s3transfer-0.11.2 six-1.17.0 typing-extensions-4.12.2 urllib3-1.26.20 wrapt-1.17.2
+>WARNING: You are using pip version 21.3.1; however, version 25.0.1 is available.
+>You should consider upgrading via the '/home/cloudshell-user/Workshop/aws-serverless-education/Serverless_Architecture/FargateCluster/awsvenv/bin/>python3 -m pip install --upgrade pip' command.
+>```
+
 </details>
 
 <br>
@@ -303,6 +352,26 @@ This isolates dependencies required for this project from your **global Python e
 ```
 
 ✅ You should see `boto3`, `aws-lambda-powertools`, and `aws-xray-sdk` in the output.
+
+>```console
+>Package               Version
+>--------------------- -----------
+>aws_lambda_powertools 3.6.0
+>aws-xray-sdk          2.14.0
+>boto3                 1.36.21
+>botocore              1.36.21
+>jmespath              1.0.1
+>pip                   21.3.1
+>python-dateutil       2.9.0.post0
+>s3transfer            0.11.2
+>setuptools            59.6.0
+>six                   1.17.0
+>typing_extensions     4.12.2
+>urllib3               1.26.20
+>wrapt                 1.17.2
+>WARNING: You are using pip version 21.3.1; however, version 25.0.1 is available.
+>You should consider upgrading via the '/home/cloudshell-user/Workshop/aws-serverless-education/Serverless_Architecture/FargateCluster/awsvenv/bin/>python3 -m pip install --upgrade pip' command
+>```
 
 ---
 
@@ -350,11 +419,57 @@ This isolates dependencies required for this project from your **global Python e
 # aws acm import-certificate --certificate fileb://CAs/child_certificate.crt --private-key fileb://CAs/child_private_key.pem --certificate-chain fileb://CAs/certificate.crt
 ```
 
+>```console
+>{
+>    "CertificateArn": "arn:aws:acm:us-west-2:041920240204:certificate/ctfiws-3337-4cbf-bedf-rolyatd1a877"
+>}
+>```
+
 - (Option) Verify the uploaded certificate
 
 ```bash-session
 # aws acm list-certificates --includes 'keyTypes=[EC_prime256v1]'
 ```
+
+<details>
+
+<summary>📖Summary of Certificates</summary>
+
+>```json
+>{
+>  "CertificateSummaryList": [
+>    {
+>      "CertificateArn": "arn:aws:acm:us-west-2:799960128252:certificate/c410f949-3337-4cbf-bedf-a64890d1a877",
+>      "DomainName": "*.swiftie.com",
+>      "SubjectAlternativeNameSummaries": [
+>        "*.swiftie.com",
+>        "Betty.swiftie.com",
+>        "James.swiftie.com",
+>        "Inez.swiftie.com",
+>        "swiftie.com"
+>      ],
+>      "HasAdditionalSubjectAlternativeNames": false,
+>      "Status": "ISSUED",
+>      "Type": "IMPORTED",
+>      "KeyAlgorithm": "EC-prime256v1",
+>      "KeyUsages": [
+>        "ANY"
+>      ],
+>      "ExtendedKeyUsages": [
+>        "NONE"
+>      ],
+>      "InUse": false,
+>      "RenewalEligibility": "INELIGIBLE",
+>      "NotBefore": "2025-02-15T11:15:00+00:00",
+>      "NotAfter": "2029-02-14T11:15:00+00:00",
+>      "CreatedAt": "2025-02-15T13:54:38.212000+00:00",
+>      "ImportedAt": "2025-02-15T13:54:38.213000+00:00"
+>    }
+>  ]
+>}
+>```
+
+<details>
 
 ---
 
@@ -379,10 +494,6 @@ This template creates a **basic 🟣VPC** with:
   - **Network ACLs** for security
 
 <br>
-
-- 📌 Required Parameters:
-  - **`AvailabilityZones`**: <i>us-west-2a,us-west-2b,us-west-2c, us-west-2d</i> (Oregon) *You can adjust this however you like.
-  - **`VPCName`**: <i>TestVPC</i>
 
 <details>
 
@@ -410,6 +521,10 @@ This template creates a **basic 🟣VPC** with:
 
 <br>
 
+- 📌 Required Parameters:
+  - **`AvailabilityZones`**: <i>us-west-2a,us-west-2b,us-west-2c, us-west-2d</i> (Oregon) *You can adjust this however you like.
+  - **`VPCName`**: <i>TestVPC</i>
+
 - `--config-env` (Environment name): <i>Basic-VPC</i>
 
 ```bash-session
@@ -420,6 +535,72 @@ This template creates a **basic 🟣VPC** with:
   # sam deploy -t VPC.yaml --config-env Basic-VPC
 ```
 
+<details>
+
+<summary>📖An example of output</summary>
+
+>```console
+>Configuring SAM deploy
+>======================
+>        Looking for config file [samconfig.toml] :  Found
+>        Reading default arguments  :  Success
+>
+>        Setting default arguments for 'sam deploy'
+>        =========================================
+>        Stack Name [sam-app]: Basic-VPC
+>        AWS Region [us-west-2]: 
+>        Parameter AvailabilityZones [us-west-2a,us-west-2b,us-west-2c, us-west-2d]: 
+>        Parameter VPCName [TestVPC]: 
+>        #Shows you resources changes to be deployed and require a 'Y' to initiate deploy
+>        Confirm changes before deploy [y/N]: y
+>        #SAM needs permission to be able to create roles to connect to the resources in your template
+>        Allow SAM CLI IAM role creation [Y/n]: 
+>        #Preserves the state of previously provisioned resources when an operation fails
+>        Disable rollback [y/N]: 
+>        Save arguments to configuration file [Y/n]: 
+>        SAM configuration file [samconfig.toml]: 
+>        SAM configuration environment [default]: Basic-VPC
+>:
+>        Deploying with following values
+>        ===============================
+>        Stack name                   : Basic-VPC
+>        Region                       : us-west-2
+>        Confirm changeset            : True
+>        Disable rollback             : False
+>        Deployment s3 bucket         : aws-sam-cli-managed-default-26df4abd-1c85-40c2-b6fe-93bb90e3f443
+>        Capabilities                 : ["CAPABILITY_IAM"]
+>        Parameter overrides          : {"AvailabilityZones": "us-west-2a,us-west-2b,us-west-2c, us-west-2d", "VPCName": "TestVPC"}
+>        Signing Profiles             : {}
+>:
+>Outputs                                                                                                                                    
+>--------------------------------------------------------------------------------------------------------------------------------------------
+>Key                 PrivateSubnetIDs                                                                                                       
+>Description         The IDs of the private subnets                                                                                         
+>Value               subnet-0d7f2ab2debcfaec5,subnet-041e2332ed5212e8d                                                                      
+>
+>Key                 PublicSubnetIDs                                                                                                        
+>Description         The IDs of the public subnets                                                                                          
+>Value               subnet-0bd101d568021aa90,subnet-0d810cc3927a7c34f                                                                      
+>
+>Key                 VPCID                                                                                                                  
+>Description         The ID of the created VPC                                                                                              
+>Value               vpc-04eb144fbc892a756                                                                                                  
+>
+>Key                 PublicNetworkAcl                                                                                                       
+>Description         The IDs of the Public Network ACL                                                                                      
+>Value               acl-0186d0fc904c83db5                                                                                                  
+>
+>Key                 PrivateNetworkAcl                                                                                                      
+>Description         The IDs of the Private Network ACL                                                                                     
+>Value               acl-0a5eb352accf9cfcb                                                                                                  
+>--------------------------------------------------------------------------------------------------------------------------------------------
+>
+>Successfully created/updated stack - Basic-VPC in us-west-2
+>SAM CLI update available (1.133.0); (1.131.0 installed)
+>```
+
+</details>
+
 ---
 
 <br>
@@ -428,7 +609,7 @@ This template creates a **basic 🟣VPC** with:
 
 <br>
 
-This template stores critical infrastructure parameters in **AWS Systems Manager** (🔴**SSM**) **Parameter Store**, allowing easy access for other components for avoiding hardcoded values.
+This template stores critical infrastructure parameters in **AWS Systems Manager** (🔴**SSM**) - **Parameter Store**, allowing easy access for other components for avoiding hardcoded values.
 
 <br>
 
@@ -440,7 +621,7 @@ This template stores critical infrastructure parameters in **AWS Systems Manager
 ||Single Stack|Cross-Stack Exports/Imports|🔴**SSM Parameter Store**|
 |---|---|---|---|
 | When to Use     | Small projects | Separate but coupled stacks |Most dynamic setup (change values without redeploy)|
-| Flexibility     | ❌ Low|✅ Medium|🫶🏻High✨|
+| Flexibility     | ❌ Low|✅ Medium|<mark>🫶🏻High✨</mark>|
 | Complexity      | ✅ Simple|❌ Somewhat Complex|Easy|
 | **When to Use** | Basic Environments|Microservices|Microservices, Enterprise & Multi-Region|
 
