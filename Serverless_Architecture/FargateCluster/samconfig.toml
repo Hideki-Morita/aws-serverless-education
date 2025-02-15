@@ -1,0 +1,104 @@
+# More information about the configuration file can be found here:
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-config.html
+version = 0.1
+
+#[VPC-ALL.deploy.parameters]
+#stack_name = "VPC-ALL"
+#resolve_s3 = true
+#s3_prefix = "VPC-ALL"
+#region = "us-west-2"
+#confirm_changeset = true
+#capabilities = "CAPABILITY_IAM"
+#image_repositories = []
+
+[Basic-VPC.deploy.parameters]
+stack_name = "Basic-VPC"
+resolve_s3 = true
+s3_prefix = "Basic-VPC"
+region = "us-west-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+image_repositories = []
+parameter_overrides = "VPCName=\"TestVPC\""
+
+[VPC-Extras.deploy.parameters]
+stack_name = "VPC-Extras"
+resolve_s3 = true
+s3_prefix = "VPC-Extras"
+region = "us-west-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+image_repositories = []
+parameter_overrides = "ExistingVPC=\"vpc-0bf16016fa6fa0b5f\" PublicSubnetID=\"subnet-0579a7c9a0edd2779\" PrivateSubnetID1=\"subnet-01966412b40c3e379\" PrivateSubnetID2=\"subnet-034250ee78009c413\" Stage=\"Test\""
+
+[SSM.deploy.parameters]
+stack_name = "SSM"
+resolve_s3 = true
+s3_prefix = "SSM"
+region = "us-west-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "VPCID=\"vpc-039fd2094b744fa34\" PublicSubnet1=\"subnet-01bda9905a548d428\" PublicSubnet2=\"subnet-0e08dba336a730a64\" PrivateSubnet1=\"subnet-066204818040543c4\" PrivateSubnet2=\"subnet-08d80ae1d94ceba88\" ACMCertificateArn=\"arn:aws:acm:us-west-2:799960128252:certificate/a2d9278e-02e5-4a02-a8b7-6288a1858343\" ALBName=\"TestALB\" ALBS3BucketName=\"alb-logs-thgir-syawla-tfiws-rolyat\" ALBPrefix=\"alb-access-logs\" ECSClusterName=\"TestCluster\" ECSServiceName=\"ECSService\""
+image_repositories = []
+
+[ALBLogsForwarder.deploy.parameters]
+stack_name = "ALBLogsForwarder"
+resolve_s3 = true
+s3_prefix = "ALBLogsForwarder"
+region = "us-west-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "ALBName=\"/FargateCluster/ALBName\" ALBS3BucketName=\"/FargateCluster/ALBS3BucketName\" ALBPrefix=\"/FargateCluster/ALBPrefix\" Stage=\"Test\""
+image_repositories = []
+
+[ALB.deploy.parameters]
+stack_name = "ALB"
+resolve_s3 = true
+s3_prefix = "ALB"
+region = "us-west-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "ExistingVPC=\"vpc-0bf16016fa6fa0b5f\" PublicSubnet1=\"subnet-0579a7c9a0edd2779\" PublicSubnet2=\"subnet-007535c39617c6f5f\" ACMCertificateArn=\"arn:aws:acm:us-west-2:799960128252:certificate/a2d9278e-02e5-4a02-a8b7-6288a1858343\" ALBName=\"/FargateCluster/ALBName\" ALBS3BucketName=\"/FargateCluster/ALBS3BucketName\" ALBPrefix=\"alb-access-logs\""
+image_repositories = []
+disable_rollback = true
+
+[FargateCluster.deploy.parameters]
+stack_name = "FargateCluster"
+resolve_s3 = true
+s3_prefix = "FargateCluster"
+region = "us-west-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+image_repositories = []
+parameter_overrides = "VPCID=\"/FargateCluster/VPCID\" PrivateSubnet1=\"/FargateCluster/PrivateSubnet1\" PrivateSubnet2=\"/FargateCluster/PrivateSubnet2\" ALBSecurityGroupName=\"/FargateCluster/ALBSecurityGroupName\" ALBTargetGroupARN=\"/FargateCluster/ALBTargetGroupARN\" Stage=\"Test\""
+
+[ECSAutoScaling.deploy.parameters]
+stack_name = "ECSAutoScaling"
+resolve_s3 = true
+s3_prefix = "ECSAutoScaling"
+region = "us-west-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "ECSClusterName=\"TestCluster\" ECSServiceName=\"ECSService\""
+image_repositories = []
+
+[ALB-Internal.deploy.parameters]
+stack_name = "ALB-Internal"
+resolve_s3 = true
+s3_prefix = "ALB-Internal"
+region = "us-west-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "VPCID=\"/FargateCluster/VPCID\" PrivateSubnet1=\"/FargateCluster/PrivateSubnet1\" PrivateSubnet2=\"/FargateCluster/PrivateSubnet2\" ACMCertificateArn=\"/FargateCluster/ACMCertificateArn\" ALBName=\"/FargateCluster/ALBName\" ALBS3BucketName=\"/FargateCluster/ALBS3BucketName\" ALBPrefix=\"/FargateCluster/ALBPrefix\""
+image_repositories = []
+
+[VPC-Extras-Gen2Endpoint.deploy.parameters]
+stack_name = "VPC-Extras-Gen2Endpoint"
+resolve_s3 = true
+s3_prefix = "VPC-Extras-Gen2Endpoint"
+region = "us-west-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "VPCID=\"/FargateCluster/VPCID\" PublicSubnetID=\"/FargateCluster/PublicSubnet1\" PrivateSubnet1=\"/FargateCluster/PrivateSubnet1\" PrivateSubnet2=\"/FargateCluster/PrivateSubnet2\" Stage=\"Test\""
+image_repositories = []
+disable_rollback = true
