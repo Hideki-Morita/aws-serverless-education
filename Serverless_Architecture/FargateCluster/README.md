@@ -433,7 +433,7 @@ This isolates dependencies required for this project from your **global Python e
 
 <details>
 
-<summary>📖Summary of Certificates</summary>
+<summary>📖An example of output</summary>
 
 >```json
 >{
@@ -469,7 +469,7 @@ This isolates dependencies required for this project from your **global Python e
 >}
 >```
 
-<details>
+</details>
 
 ---
 
