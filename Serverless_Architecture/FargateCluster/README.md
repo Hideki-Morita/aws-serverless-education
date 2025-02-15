@@ -25,7 +25,7 @@ This solution is designed to support **education and testing environments**, pro
   - [🪩 Deployment Steps](#-deployment-steps)
     - [☻ Requirements](#-requirements)
       - [✰ Python modules](#-python-modules)
-      - [✰ AWS PoLP Permissions](#-aws-polp-permissions)
+      - [✰ AWS PoLP Permissions for a workforce as a deployer](#-aws-polp-permissions-for-a-workforce-as-a-deployer)
     - [0️⃣ Create a Virtual Environment (Recommended)](#0️⃣-create-a-virtual-environment-recommended)
     - [1️⃣ 🔴ACM - Upload SSL/TLS Certificates](#1️⃣-acm---upload-ssltls-certificates)
     - [2️⃣ Deploy 🟣VPC](#2️⃣-deploy-vpc)
@@ -96,7 +96,7 @@ The stack includes:
 <br>
 
 > 💡 **Note:**
-> In this case, we’ll deploy the 🟠**Fargate cluster** in <mark>**us-west-2 (Oregon)**</mark>.
+> In this case, we’ll deploy this architecture in <mark>**us-west-2 (Oregon)**</mark>.
 
 ---
 
@@ -115,13 +115,18 @@ The stack includes:
 <br>
 
 - Python 3.12+
-- Boto3
+  - Boto3
+  - botocore
+  - aws-lambda-powertools
+  - aws-xray-sdk
 
 ---
 
 <br>
 
-#### ✰ AWS PoLP Permissions
+#### ✰ AWS PoLP Permissions for a workforce as a deployer
+
+<br>
 
 <details>
 
@@ -226,7 +231,8 @@ The stack includes:
 
 <br>
 
-Before deploying AWS services, it’s **highly recommended** to create a **virtual environment**. This isolates dependencies required for this project from your **global Python environment**, preventing conflicts and keeping things clean.
+Before deploying AWS services, it’s **highly recommended** to create a **virtual environment**.  
+This isolates dependencies required for this project from your **global Python environment**, preventing conflicts and keeping things clean.
 
 <br>
 
@@ -246,6 +252,8 @@ Before deploying AWS services, it’s **highly recommended** to create a **virtu
 # python3 -m venv awsvenv
 ```
 
+<br>
+
 2. 🐾 **Activate the virtual environment:**
 
   - 🐧 On macOS/Linux:
@@ -262,16 +270,15 @@ Before deploying AWS services, it’s **highly recommended** to create a **virtu
 
 <br>
 
-Once the virtual environment is activated, install the package using `pip`:
-✅ Once activated, your terminal will show something like this:
+✅ Once activated, your terminal will show something like this:  
 
-```console
-(awsvenv) user@hostname:~/aws-serverless-education/Serverless_Architecture/FargateCluster$ 
-```
+>```console
+>(awsvenv) user@hostname:~/aws-serverless-education/Serverless_Architecture/FargateCluster$ 
+>```
 
 <br>
 
-3. 🐾 **Install Required Dependencies:**
+1. 🐾 **Install Required Dependencies:**
 
 - With the virtual environment activated, install the required Python libraries for the 🟠**Lambda function**:
 
@@ -305,9 +312,6 @@ Once the virtual environment is activated, install the package using `pip`:
 
 <br>
 
-> 💡 **Note:**
-> 🙃 The `schema` ensures binary-safe file uploads (`fileb://`)
-
 - 📌 Example Files:
   - **Root Certificate**: <i>certificate.crt</i>  
   - **Child Certificate**: <i>child_certificate.crt</i>  
@@ -337,6 +341,9 @@ Once the virtual environment is activated, install the package using `pip`:
 </details>
 
 - Upload self-certificate to 🔴**ACM**
+
+> 💡 **Note:**
+> 🙃 The `schema` ensures binary-safe file uploads (`fileb://`)
 
 ```bash-session
 # export AWS_DEFAULT_REGION=us-west-2
@@ -401,6 +408,8 @@ This template creates a **basic 🟣VPC** with:
 
 </details>
 
+<br>
+
 - `--config-env` (Environment name): <i>Basic-VPC</i>
 
 ```bash-session
@@ -421,6 +430,8 @@ This template creates a **basic 🟣VPC** with:
 
 This template stores critical infrastructure parameters in **AWS Systems Manager** (🔴**SSM**) **Parameter Store**, allowing easy access for other components for avoiding hardcoded values.
 
+<br>
+
 > 💡 **Note:**
 > Three Approaches for getting values.
 
@@ -432,6 +443,8 @@ This template stores critical infrastructure parameters in **AWS Systems Manager
 | Flexibility     | ❌ Low|✅ Medium|🫶🏻High✨|
 | Complexity      | ✅ Simple|❌ Somewhat Complex|Easy|
 | **When to Use** | Basic Environments|Microservices|Microservices, Enterprise & Multi-Region|
+
+<br>
 
 - 📌 Required Parameters:
   - `ACMCertificateArn` : <i>arn:aws:acm:us-west-2:<ACCOUNT-ID>:certificate/xxxx</i>
@@ -450,11 +463,12 @@ This template stores critical infrastructure parameters in **AWS Systems Manager
   - `ECSServiceName` : <i>TSService</i>
   - `ECSTaskDefinitionName`: <i>TS-11</i>
   - `ECSContainerName`: <i>TTPD-nginx</i>
-
-- [💡Tips: **General purpose 🟢S3 bucket naming rules**](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html#create-bucket-name-guid) 
-    - Useful commands for generate globally unique identifiers
+  - [💡Tips: **General purpose 🟢S3 bucket naming rules**](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html#create-bucket-name-guid) 
+      - Useful commands for generate globally unique identifiers
       - **`openssl rand -base64 20 | sed -re 's/(.....)/&-/g' -e 's/[/,+,=]/A/g' | awk '{print tolower($0)}'`**
       - **`uuidgen | tr '[:upper:]' '[:lower:]'`**
+
+<br>
 
 - `--config-env` (Environment name): <i>SSM</i>
 
@@ -478,16 +492,15 @@ This template adds a 🟣**NAT Gateway**, `security groups`, and optional 🟣**
 
 > 💡 **Note:**  
 > 🙄 Why Do We Need a 🟣**NAT Gateway** for `Private` 🟠**ECS**?  
-
   >>When an image is pulled using a pull through cache rule for **the first time**, if you've configured Amazon ECR to use an interface VPC endpoint using AWS PrivateLink then <u>**you need to create a public subnet in the same VPC, with a NAT gateway,**</u> and then route all outbound traffic to the internet from their private subnet to the NAT gateway in order for the pull to work. **Subsequent image pulls don't require this.** [^2]
+
+<br>
 
 >⚠️ Cost Warning: [^3]  
 >🟣**NAT Gateway** and 🟣**VPC Endpoints** incur hourly and data transfer costs. To prevent unexpected charges, delete the stack when not in use.  
 >🟣**VPC Flow Logs** incur charges based on the amount of logged data.  
 
-- Necessary parameters
- - `AvailabilityZones`: <i>us-west-2a,us-west-2b,us-west-2c, us-west-2d</i> (In Oregon)
- - `VPCName`: <i>TestVPC</i>
+<br>
 
 <details>
 
@@ -526,6 +539,8 @@ This template adds a 🟣**NAT Gateway**, `security groups`, and optional 🟣**
 >```
 
 </details>
+
+<br>
 
 - `--config-env` (Environment name): <i>VPC-Extras-Gen2Endpoint</i> / <i>VPC-Extras-Flowlogs</i>
 
@@ -573,6 +588,8 @@ This step sets up ALB logs forwarding to CloudWatch Logs
 
 </details>
 
+<br>
+
 - `--config-env` (Environment name): <i>ALBLogsForwarder</i>
 
 ```bash-session
@@ -616,6 +633,8 @@ This step sets up ALB logs forwarding to CloudWatch Logs
 >```
 
 </details>
+
+<br>
 
 - `--config-env` (Environment name): <i>ALB-Internal</i>
 
@@ -698,9 +717,10 @@ This step sets up ALB logs forwarding to CloudWatch Logs
 >⚠️ Cost Warning: [^3]  
 >The 🟠**Fargate** is a paid service and incurs hourly and vCPU and storage based charges.
 
-- 📌Deploy Fargate Cluster
+<br>
 
-- `--config-env` (Environment name): <i>FargateCluster</i>
+- 📌Deploy Fargate Cluster
+  - `--config-env` (Environment name): <i>FargateCluster</i>
 
 ```bash-session
 ### The first time
@@ -734,6 +754,8 @@ This step sets up ALB logs forwarding to CloudWatch Logs
 
 </details>
 
+<br>
+
 - `--config-env` (Environment name): <i>ECSAppAutoScaling</i>
 
 ```bash-session
@@ -760,15 +782,15 @@ This step sets up ALB logs forwarding to CloudWatch Logs
 Ctrl+D
 
 # ALB_DNS=TestALB-545957675.us-west-2.elb.amazonaws.com
-# curl -vk --cacert certificate.crt https://${ALB_DNS:-NULL} -H "Host: karen.disney.com"
-# curl -vk --cacert certificate.crt https://${ALB_DNS:-NULL} -H "Host: dorry.disney.com"
+# curl -vk --cacert certificate.crt https://${ALB_DNS:-NULL} -H "Host: Betty.swiftie.com"
+# curl -vk --cacert certificate.crt https://${ALB_DNS:-NULL} -H "Host: James.swiftie.com"
 ```
 
 - Copy and paste this to send a request
 
 ```console
 GET / HTTP/1.1
-Host: karen.disney.com
+Host: Betty.swiftie.com
 Connection: close
 ```
 
