@@ -1,0 +1,53 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ExplicitDenyPublicAccess",
+      "Principal": "*",
+      "Effect": "Deny",
+      "Action": "*",
+      "Resource": [
+        "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}",
+        "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}/*"
+      ],
+      "Condition": {
+        "Bool": {
+          "aws:SecureTransport": "false"
+        }
+      }
+    },
+    {
+      "Sid": "AllowSAMAccess",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "cloudformation.amazonaws.com"
+      },
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject"
+      ],
+      "Resource": "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}/*",
+      "Condition": {
+        "StringEquals": {
+          "AWS:SourceAccount": "${ACCOUNT_ID}"
+        }
+      }
+    },
+    {
+      "Sid": "AllowAccountOwnerToAvoidLockout",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": [
+          "arn:aws:iam::${ACCOUNT_ID}:root",
+          "${ASSUMED_ROLE_ARN}",
+          "arn:aws:iam::${ACCOUNT_ID}:role/aws-reserved/sso.amazonaws.com/us-west-2/${ASSUMED_ROLE_NAME}"
+        ]
+      },
+      "Action": "s3:*",
+      "Resource": [
+        "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}",
+        "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}/*"
+      ]
+    }
+  ]
+}

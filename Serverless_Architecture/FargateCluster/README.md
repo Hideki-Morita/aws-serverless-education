@@ -29,6 +29,7 @@ This solution is designed to support **education and testing environments**, pro
     - [0️⃣ Create a Virtual Environment (Recommended)](#0️⃣-create-a-virtual-environment-recommended)
     - [1️⃣ 🔴ACM - Upload SSL/TLS Certificates](#1️⃣-acm---upload-ssltls-certificates)
     - [2️⃣ Deploy 🟣VPC](#2️⃣-deploy-vpc)
+      - [✰ (Optional) Create Secure 🟢S3 Bucket for SAM Artifacts](#-optional-create-secure-s3-bucket-for-sam-artifacts)
       - [✰ Basic VPC Setup](#-basic-vpc-setup)
         - [✦ 🔴SSM ParameterStore settings](#-ssm-parameterstore-settings)
       - [✰ 🟣VPC-Extras💰](#-vpc-extras)
@@ -244,7 +245,7 @@ This isolates dependencies required for this project from your **global Python e
 
 - 📌 e.g., <mark>**On 🔵CloudShell**</mark> (AWS managed network)
 
-```bash session
+```bash-session
 # cd /path/to/your/project
 # git clone https://github.com/Hideki-Morita/aws-serverless-education.git
 # cd serverless-education/Serverless_Architecture/FargateCluster
@@ -262,7 +263,7 @@ This isolates dependencies required for this project from your **global Python e
 
 - Create a virtual environment:
 
-```bash session
+```bash-session
 # python3 -m venv awsvenv
 ```
 
@@ -272,7 +273,7 @@ This isolates dependencies required for this project from your **global Python e
 
   - 🐧 On macOS/Linux:
 
-  ```bash session
+  ```bash-session
   # source awsvenv/bin/activate
   ```
 
@@ -439,7 +440,7 @@ This isolates dependencies required for this project from your **global Python e
 >{
 >  "CertificateSummaryList": [
 >    {
->      "CertificateArn": "arn:aws:acm:us-west-2:799960128252:certificate/c410f949-3337-4cbf-bedf-a64890d1a877",
+>      "CertificateArn": "arn:aws:acm:us-west-2:041920240204:certificate/ctfiws-3337-4cbf-bedf-rolyatd1a877",
 >      "DomainName": "*.swiftie.com",
 >      "SubjectAlternativeNameSummaries": [
 >        "*.swiftie.com",
@@ -478,6 +479,194 @@ This isolates dependencies required for this project from your **global Python e
 ### 2️⃣ Deploy 🟣VPC
 
 <br>
+
+---
+
+<br>
+
+#### ✰ (Optional) Create Secure 🟢S3 Bucket for SAM Artifacts
+
+<br>
+
+> Why create a custom 🟢**S3 Bucket** for 🟠**AWS SAM**?
+
+By default, 🟠**AWS SAM** creates an 🟢**S3 Bucket** with a predictable name, like **aws-sam-cli-managed-default-samclisourcebucket-**xxxxxxxx.  
+While convenient, this introduces potential risks:  
+1. **Predictable Naming**: Attackers could guess the bucket name and target it with API requests.
+2. **Cost Risks**: Even failed requests incur AWS charges.
+3. **Security Gaps**: The default bucket may not have strict policies, increasing the attack surface.
+
+> 💡 To mitigate these risks, create a custom 🟢**S3 Bucket** with restrictive policies and encryption.
+
+<br>
+
+- [💡Tips: **General purpose 🟢S3 Bucket naming rules**](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html#create-bucket-name-guid) 
+  - Useful commands for generate globally unique identifiers
+  - **`openssl rand -base64 20 | sed -re 's/(.....)/&-/g' -e 's/[/,+,=]/A/g' | awk '{print tolower($0)}'`**
+  - **`uuidgen | tr '[:upper:]' '[:lower:]'`**
+
+<br>
+
+1. 🐾 **Create new 🟢S3 Bucket:**
+
+- 📌 e.g., <mark>**On 🔵CloudShell**</mark> (AWS managed network)
+
+```bash-session
+### Define variables (replace with your values)
+# export SAM_CLI_SOURCE_BUCKET=_Something_
+# export AWS_DEFAULT_REGION=us-west-2
+
+
+### Create the bucket
+# aws s3api create-bucket --bucket ${SAM_CLI_SOURCE_BUCKET:-NULL} --region ${AWS_DEFAULT_REGION:-NULL} --create-bucket-configuration LocationConstraint=${AWS_DEFAULT_REGION:-NULL}
+```
+
+>```json
+>{
+>    "Location": "http://SAM_CLI_SOURCE_BUCKET.s3.amazonaws.com/"
+>}
+>```
+
+<br>
+
+2. 🐾 **Apply a 📄Secure Bucket Policy**
+
+<br>
+
+- **Explanation**
+  - 🚫 1. `“Sid”: “DenyPublicAccess”`
+    - This is an <mark>**explicit deny**</mark>, which takes precedence over any other “allow” policy.
+    - Although AWS now blocks public access **by default**, this policy ensures that **even if someone changes the bucket settings**, public access is still denied. 
+    - Condition → Enforces **TLS (https)** for secure data transfer.
+  - ✅ 2. `“Sid”: “AllowSAMAccess”`
+    - This allows **AWS SAM (CloudFormation)** to access the bucket during deployments
+  - ✅ 3. `“Sid”: AllowAccountOwnerToAvoidLockout`
+    - This allows the **AWS account owner (root user)** to access the bucket. [⚠️ **Lockout of S3 Bucket** <i class="fa fa-external-link-square-alt"></i>](https://repost.aws/articles/ARZE8eiGwITGKoAOJmHMm-kg/s3-bucket-lockout-recovery-using-iam-root-sessions)
+
+<br>
+
+  ```json {hl_lines=["10-11",17,"27-29"]}
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "ExplicitDenyPublicAccess",
+        "Principal": "*",
+        "Effect": "Deny",
+        "Action": "*",
+        "Resource": [
+          "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}",
+          "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}/*"
+        ],
+        "Condition": {
+          "Bool": {
+            "aws:SecureTransport": "false"
+          }
+        }
+      },
+      {
+        "Sid": "AllowSAMAccess",
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "cloudformation.amazonaws.com"
+        },
+        "Action": [
+          "s3:PutObject",
+          "s3:GetObject"
+        ],
+        "Resource": "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}/*",
+        "Condition": {
+          "StringEquals": {
+            "AWS:SourceAccount": "${ACCOUNT_ID}"
+          }
+        }
+      },
+      {
+        "Sid": "AllowAccountOwnerToAvoidLockout",
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": [
+            "arn:aws:iam::${ACCOUNT_ID}:root",
+            "${ASSUMED_ROLE_ARN}",
+            "arn:aws:iam::${ACCOUNT_ID}:role/aws-reserved/sso.amazonaws.com/us-west-2/${ASSUMED_ROLE_NAME}"
+          ]
+        },
+        "Action": "s3:*",
+        "Resource": [
+          "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}",
+          "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}/*"
+        ]
+      }
+    ]
+  }
+  ```
+
+<br>
+
+- Create a bucket-policy.json file:
+
+```bash-session
+### Replace placeholders with real values
+# export ACCOUNT_ID=`\aws sts get-caller-identity --query Account --output text`
+# export ASSUMED_ROLE_ARN=`\aws sts get-caller-identity --query Arn --output text`
+# export ASSUMED_ROLE_NAME=`echo ${ASSUMED_ROLE_ARN} | cut -f 2 -d "/"`
+
+### Apply the bucket policy
+# envsubst < bucket-policy.json | aws s3api put-bucket-policy --bucket ${SAM_CLI_SOURCE_BUCKET} --policy file://-
+# unset ACCOUNT_ID ASSUMED_ROLE_ARN ASSUMED_ROLE_NAME
+```
+
+<br>
+
+- Put the bucket policy to 🟢**S3 Bucket** for 🟠**AWS SAM**
+
+```bash-session
+# aws s3api put-bucket-policy --bucket ${SAM_CLI_SOURCE_BUCKET} --policy file://policy.json
+```
+
+<br>
+
+3. 🐾 **Verify Installation:**
+
+- (Optional) Check the result:
+
+```bash-session
+# pwsh -C "aws s3api get-bucket-policy --bucket ${SAM_CLI_SOURCE_BUCKET} --output text | ConvertFrom-Json | select -expandProperty Statement"
+
+# aws s3api get-bucket-encryption --bucket ${SAM_CLI_SOURCE_BUCKET}
+
+    # If not, Enable default encryption (AES256)
+    aws s3api put-bucket-encryption --bucket ${SAM_CLI_SOURCE_BUCKET} --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+```
+
+<details>
+
+<summary>📖An example of output</summary>
+
+>```ps1
+>Sid       : AWSCloudTrailAclCheck20150319
+>Effect    : Allow
+>Principal : @{Service=cloudtrail.amazonaws.com}
+>Action    : s3:GetBucketAcl
+>Resource  : arn:aws:s3:::BUCKET_NAME/*
+>```
+
+>```json
+>{
+>    "ServerSideEncryptionConfiguration": {
+>        "Rules": [
+>            {
+>                "ApplyServerSideEncryptionByDefault": {
+>                    "SSEAlgorithm": "AES256"
+>                },
+>                "BucketKeyEnabled": false
+>            }
+>        ]
+>    }
+>}
+>```
+
+</details>
 
 ---
 
@@ -529,10 +718,10 @@ This template creates a **basic 🟣VPC** with:
 
 ```bash-session
 ### The first time
-# sam deploy --guided -t VPC.yaml
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --guided -t VPC.yaml
 
   ### After the second
-  # sam deploy -t VPC.yaml --config-env Basic-VPC
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} -t VPC.yaml --config-env Basic-VPC
 ```
 
 <details>
@@ -644,7 +833,7 @@ This template stores critical infrastructure parameters in **AWS Systems Manager
   - `ECSServiceName` : <i>TSService</i>
   - `ECSTaskDefinitionName`: <i>TS-11</i>
   - `ECSContainerName`: <i>TTPD-nginx</i>
-  - [💡Tips: **General purpose 🟢S3 bucket naming rules**](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html#create-bucket-name-guid) 
+  - [💡Tips: **General purpose 🟢S3 Bucket naming rules**](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html#create-bucket-name-guid) 
       - Useful commands for generate globally unique identifiers
       - **`openssl rand -base64 20 | sed -re 's/(.....)/&-/g' -e 's/[/,+,=]/A/g' | awk '{print tolower($0)}'`**
       - **`uuidgen | tr '[:upper:]' '[:lower:]'`**
@@ -655,10 +844,10 @@ This template stores critical infrastructure parameters in **AWS Systems Manager
 
 ```bash-session
 ### The first time
-# sam deploy --guided -t SSM.yaml
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --guided -t SSM.yaml
 
   ### After the second
-  # sam deploy -t SSM.yaml --config-env SSM
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} -t SSM.yaml --config-env SSM
 ```
 
 ---
@@ -727,17 +916,17 @@ This template adds a 🟣**NAT Gateway**, `security groups`, and optional 🟣**
 
 ```bash-session
 ### The first time
-# sam deploy --guided -t VPC_Extras_Gen2Endpoint.yaml
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --guided -t VPC_Extras_Gen2Endpoint.yaml
 
   ### After the second
-  # sam deploy -t VPC_Extras_Gen2Endpoint.yaml --config-env VPC-Extras-Gen2Endpoint
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} -t VPC_Extras_Gen2Endpoint.yaml --config-env VPC-Extras-Gen2Endpoint
 
 
 ### The first time
-# sam deploy --guided -t VPC_Extras_Flowlogs.yaml
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --guided -t VPC_Extras_Flowlogs.yaml
 
   ### After the second
-  # sam deploy -t VPC_Extras_Flowlogs.yaml --config-env VPC-Extras-Flowlogs
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} -t VPC_Extras_Flowlogs.yaml --config-env VPC-Extras-Flowlogs
 ```
 
 ---
@@ -778,10 +967,10 @@ This step sets up ALB logs forwarding to CloudWatch Logs
 # sam build -t ALB_Logs_Forwarder.yaml
 
 ### The first time
-# sam deploy --guided -t ALB_Logs_Forwarder.yaml
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --guided -t ALB_Logs_Forwarder.yaml
 
   ### After the second
-  # sam deploy -t ALB_Logs_Forwarder.yaml --config-env ALBLogsForwarder
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} -t ALB_Logs_Forwarder.yaml --config-env ALBLogsForwarder
 ```
 
 ---
@@ -821,10 +1010,10 @@ This step sets up ALB logs forwarding to CloudWatch Logs
 
 ```bash-session
 ### The first time
-# sam deploy --guided -t ALB_Internal.yaml
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --guided -t ALB_Internal.yaml
 
   ### After the second
-  # sam deploy -t ALB_Internal.yaml --config-env ALB-Internal
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} -t ALB_Internal.yaml --config-env ALB-Internal
 ```
 
 ---
@@ -905,10 +1094,10 @@ This step sets up ALB logs forwarding to CloudWatch Logs
 
 ```bash-session
 ### The first time
-# sam deploy --guided -t FargateCluster.yaml
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --guided -t FargateCluster.yaml
 
   ### After the second
-  # sam deploy -t FargateCluster.yaml --config-env FargateCluster
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} -t FargateCluster.yaml --config-env FargateCluster
 ```
 
 ---
@@ -941,10 +1130,10 @@ This step sets up ALB logs forwarding to CloudWatch Logs
 
 ```bash-session
 ### The first time
-# sam deploy --guided -t AppAutoScaling.yaml
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --guided -t AppAutoScaling.yaml
 
   ### After the second
-  # sam deploy -t AppAutoScaling.yaml --config-env ECSAppAutoScaling
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} -t AppAutoScaling.yaml --config-env ECSAppAutoScaling
 ```
 
 ---
@@ -1007,6 +1196,17 @@ Connection: close
 ### 🟣VPC
 # sam delete --config-env Basic-VPC
 ```
+
+>```console
+>        Enter stack name you want to delete: Basic-VPC
+>        Are you sure you want to delete the stack Basic-VPC in the region us-west-2 ? [y/N]: y
+>        - Deleting Cloudformation stack Basic-VPC
+>
+>Deleted successfully
+>
+>SAM CLI update available (1.134.0); (1.131.0 installed)
+>To download: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html
+>```
 
 ---
 
