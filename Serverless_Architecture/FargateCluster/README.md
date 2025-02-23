@@ -488,12 +488,12 @@ This isolates dependencies required for this project from your **global Python e
 
 <br>
 
-> Why create a custom 🟢**S3 Bucket** for 🟠**AWS SAM**?
+> 🙄Why create a custom 🟢**S3 Bucket** for 🟠**AWS SAM**?
 
-By default, 🟠**AWS SAM** creates an 🟢**S3 Bucket** with a predictable name, like **aws-sam-cli-managed-default-samclisourcebucket-**xxxxxxxx.  
+By default, 🟠**AWS SAM** creates an 🟢**S3 Bucket** with a predictable name, like **aws-sam-cli-managed-default-samclisourcebucket**-xxxxxxxx.  
 While convenient, this introduces potential risks:  
-1. **Predictable Naming**: Attackers could guess the bucket name and target it with API requests.
-2. **Cost Risks**: Even failed requests incur AWS charges.
+1. **Predictable Naming**: Attackers **could guess the bucket name** and target it with API requests.🫠
+2. **Cost Risks**: Even failed requests incur AWS charges.💸
 3. **Security Gaps**: The default bucket may not have strict policies, increasing the attack surface.
 
 > 💡 To mitigate these risks, create a custom 🟢**S3 Bucket** with restrictive policies and encryption.
