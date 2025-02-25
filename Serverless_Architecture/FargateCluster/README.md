@@ -1247,7 +1247,7 @@ Deploy this changeset? [y/N]: y
 
 |🙄How to create CloudShell within Private Subnet?||
 |---|---|
-|![image](../../assets/FargateCluster-CS1.jpg)||![image](../../assets/FargateCluster-CS2.jpg)|
+|![image](../../assets/FargateCluster-CS1.jpg)|![image](../../assets/FargateCluster-CS2.jpg)|
 
 <br>
 
