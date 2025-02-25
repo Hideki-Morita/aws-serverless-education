@@ -1245,6 +1245,12 @@ Deploy this changeset? [y/N]: y
 
 📌 <mark>**On 🔵CloudShell in `Private` Subnet**</mark>
 
+|🙄How to create CloudShell within Private Subnet?||
+|---|---|
+|![image](../../assets/FargateCluster-CS1.jpg)||![image](../../assets/FargateCluster-CS2.jpg)|
+
+<br>
+
 ```bash-session
 ### Define variables
 # REPO_NAME=debut ; ACCOUNT_ID=`aws sts get-caller-identity | jq -r .Account`
