@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Part-3 - A Basic VPC network setup for testing purposes, including subnets, route tables, and endpoints.
+
+Parameters:
+  VPCID:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /FargateCluster/VPC/VPCID
+    Description: The ID of the existing VPC.
+  Stage:
+    Type: String
+    Default: Test
+
+Resources:
+  ### VPC Flow Logs ###
+  VPCFlowLogs:
+    Type: AWS::EC2::FlowLog
+    Properties:
+      ResourceId: !Ref VPCID
+      ResourceType: VPC
+      TrafficType: ALL # Capture ACCEPT, REJECT, and ALL traffic
+      LogDestinationType: cloud-watch-logs
+      LogDestination: !GetAtt VPCFlowLogGroup.Arn
+      DeliverLogsPermissionArn: !GetAtt FlowLogRole.Arn
+
+  ### CloudWatch Log Group for VPC Flow Logs ###
+  VPCFlowLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/VPC/FlowLogs/${Stage}/${AWS::StackName}"
+      RetentionInDays: 1 # Retain logs for n days
+
+  ### IAM Role for VPC Flow Logs ###
+  FlowLogRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - vpc-flow-logs.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      PermissionsBoundary: !Sub "arn:aws:iam::${AWS::AccountId}:policy/Protect-Me" # Attach the required boundary
+      Policies:
+        - PolicyName: FlowLogPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/VPC/FlowLogs/${Stage}/${AWS::StackName}:*"
+
+Outputs:
+  ### VPC Flow Logs ###
+  VPCFlowLogGroupName:
+    Description: "📜 CloudWatch Log Group Name for VPC Flow Logs"
+    Value: !Ref VPCFlowLogGroup
+
+  VPCFlowLogsID:
+    Description: "🔍 VPC Flow Logs ID (Logs network traffic for security & monitoring)"
+    Value: !Ref VPCFlowLogs
+
+  ### ⚠️ Cost Warnings ###
+  VPCFlowLogsCostWarning:
+    Description: "⚠️ VPC Flow Logs incur charges based on the amount of logged data! 📊 Monitor usage."
+    Value: "VPC Flow Logs are enabled. Ensure retention & logging policies align with your budget."

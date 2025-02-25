@@ -1,0 +1,263 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Writes ALB settings to SSM Parameter Store.
+
+Parameters:
+  VPCID:
+    Type: String
+    Default: Unknown-vpc-xxxx-300-takeout-coffees-later
+    Description: The ID of the existing VPC
+  PublicSubnet1:
+    Type: String
+    Default: Unknown-subnet-xxxa-300-takeout-coffees-later
+    Description: The ID of the first public subnet
+  PublicSubnet2:
+    Type: String
+    Default: Unknown-subnet-xxxb-300-takeout-coffees-later
+    Description: The ID of the second public subnet
+  PrivateSubnet1:
+    Type: String
+    Default: Unknown-subnet-xxxc-300-takeout-coffees-later
+    Description: The ID of the first Private subnet
+  PrivateSubnet2:
+    Type: String
+    Default: Unknown-subnet-xxxd-300-takeout-coffees-later
+    Description: The ID of the second Private subnet
+  ACMCertificateArn:
+    Type: String
+    Default: Unknown-ACM-ARN-300-takeout-coffees-later
+    Description: The ARN of the ACM certificate for ALB HTTPS listener
+  NatGatewayID:
+    Type: String
+    Default: Unknown-NatGtwyID-300-takeout-coffees-later
+    Description: The ID of the Nat-Gateway
+  ALBSecurityGroupName:
+    Type: String
+    Default: Unknown-ALB-SGName-300-takeout-coffees-later
+    Description: The Name of the Security Group of the ALB
+  ALBTargetGroupARN:
+    Type: String
+    Default: Unknown-ALB-TGARN-300-takeout-coffees-later
+    Description: The ARN of the Target Group of the ALB
+  ALBName:
+    Type: String
+    Default: TS-ALB
+    Description: The name of the ALB.
+  ALBS3BucketName:
+    Type: String
+    Default: alb-logs-2v9dr-u4aod-vxq6f-a5ow3-thgir-syawla-tfiws-rolyat
+    Description: The name of the S3 bucket to store ALB access logs.
+  ALBPrefix:
+    Type: String
+    Default: alb-access-logs
+    Description: Prefix for ALB access log files in the S3 bucket.
+  ECSClusterName:
+    Type: String
+    Default: TS-ECS-Cluster
+    Description: The Name of the ECS Cluster
+  ECSServiceName:
+    Type: String
+    Default: TS-ECS-Service
+    Description: The Name of the ECS Service
+  ECSTaskDefinitionName:
+    Type: String
+    Default: TS-11
+    Description: The Name of the Task Definition that will be registered in ECS Service
+  ECSContainerName:
+    Type: String
+    Default: TTPD-nginx
+    Description: The Name of the containerized application in the task definition
+
+Resources:
+  ExistingVPCSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/FargateCluster/VPC/VPCID"
+      Type: String
+      Value: !Ref VPCID
+      Description: "VPC ID where the ALB is deployed."
+
+  PublicSubnet1SSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/FargateCluster/VPC/PublicSubnet1"
+      Type: String
+      Value: !Ref PublicSubnet1
+      Description: "First public subnet for ALB."
+
+  PublicSubnet2SSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/FargateCluster/VPC/PublicSubnet2"
+      Type: String
+      Value: !Ref PublicSubnet2
+      Description: "Second public subnet for ALB."
+
+  PrivateSubnet1SSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/FargateCluster/VPC/PrivateSubnet1"
+      Type: String
+      Value: !Ref PrivateSubnet1
+      Description: "First public subnet for ALB."
+
+  PrivateSubnet2SSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/FargateCluster/VPC/PrivateSubnet2"
+      Type: String
+      Value: !Ref PrivateSubnet2
+      Description: "Second public subnet for ALB."
+
+  ACMCertificateArnSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/FargateCluster/ACMCertificateArn"
+      Type: String
+      Value: !Ref ACMCertificateArn
+      Description: "SSL/TLS certificate ARN for ALB."
+
+  NatGatewayIDSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/FargateCluster/VPC/NatGatewayID"
+      Type: String
+      Value: !Ref NatGatewayID
+      Description: "The ID of the Nat-Gateway (You must update this value, 'cause this is temporary value.)"
+
+  ALBSecurityGroupNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/FargateCluster/ALB/SecurityGroupName"
+      Type: String
+      Value: !Ref ALBSecurityGroupName
+      Description: "The Name of the Security Group of the ALB (You must update this value, 'cause this is temporary value.)"
+
+  ALBTargetGroupArnSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/FargateCluster/ALB/TargetGroupARN"
+      Type: String
+      Value: !Ref ALBTargetGroupARN
+      Description: "The ARN of the Target Group of the ALB (You must update this value, 'cause this is temporary value.)"
+
+  ALBNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /FargateCluster/ALB/ALBName
+      Type: String
+      Value: !Ref ALBName
+      Description: "Stores the ALB Name securely"
+
+  ALBS3BucketSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /FargateCluster/ALB/S3BucketName
+      Type: String
+      Value: !Ref ALBS3BucketName
+      Description: "Stores the ALB Log Bucket securely"
+
+  ALBPrefixSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/FargateCluster/ALB/ALBPrefix"
+      Type: String
+      Value: !Ref ALBPrefix
+      Description: "Prefix for ALB logs."
+
+  ECSClusterNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/FargateCluster/ECS/ClusterName"
+      Type: String
+      Value: !Ref ECSClusterName
+      Description: "The Name of the ECS Cluster."
+
+  ECSServiceNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/FargateCluster/ECS/ServiceName"
+      Type: String
+      Value: !Ref ECSServiceName
+      Description: "The Name of the ECS Service."
+
+  ECSTaskDefinitionNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/FargateCluster/ECS/TaskDefinitionName"
+      Type: String
+      Value: !Ref ECSTaskDefinitionName
+      Description: "The Name of the Task Definition that will be registered in ECS Service"
+
+  ECSContainerNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "/FargateCluster/ECS/ContainerName"
+      Type: String
+      Value: !Ref ECSContainerName
+      Description: The Name of the containerized application in the task definition."
+
+Outputs:
+  ExistingVPC:
+    Description: "SSM Parameter for VPC ID"
+    Value: !Ref ExistingVPCSSM
+
+  PublicSubnet1:
+    Description: "SSM Parameter for First Public Subnet"
+    Value: !Ref PublicSubnet1SSM
+
+  PublicSubnet2:
+    Description: "SSM Parameter for Second Public Subnet"
+    Value: !Ref PublicSubnet2SSM
+
+  PrivateSubnet1:
+    Description: "SSM Parameter for First Public Subnet"
+    Value: !Ref PrivateSubnet1SSM
+
+  PrivateSubnet2:
+    Description: "SSM Parameter for Second Public Subnet"
+    Value: !Ref PrivateSubnet2SSM
+
+  ACMCertificateArn:
+    Description: "SSM Parameter for ACM Certificate ARN"
+    Value: !Ref ACMCertificateArnSSM
+
+  NatGatewayID:
+    Description: "SSM Parameter for Nat-Gateway ID (Might be temporary value)"
+    Value: !Ref NatGatewayIDSSM
+
+  ALBSecurityGroupName:
+    Description: "SSM Parameter for ALB Security Group Name (Might be temporary value)"
+    Value: !Ref ALBSecurityGroupNameSSM
+
+  ALBTargetGroupARN:
+    Description: "SSM Parameter for ALB Target Group ARN (Might be temporary value)"
+    Value: !Ref ALBTargetGroupArnSSM
+
+  ALBName:
+    Description: "SSM Parameter for ALB Name"
+    Value: !Ref ALBNameSSM
+
+  ALBS3BucketName:
+    Description: "SSM Parameter for ALB S3 Bucket Name"
+    Value: !Ref ALBS3BucketSSM
+
+  ALBPrefix:
+    Description: "SSM Parameter for ALB Log Prefix"
+    Value: !Ref ALBPrefixSSM
+
+  ECSClusterName:
+    Description: "The Name of the ECS Cluster"
+    Value: !Ref ECSClusterNameSSM
+
+  ECSServiceName:
+    Description: "The Name of the ECS Service"
+    Value: !Ref ECSServiceNameSSM
+
+  ECSTaskDefinitionName:
+    Description: "The Name of the Task Definition that will be registered in ECS Service."
+    Value: !Ref ECSTaskDefinitionNameSSM
+
+  ECSContainerName:
+    Description: "The Name of the containerized application in the task definition."
+    Value: !Ref ECSContainerNameSSM

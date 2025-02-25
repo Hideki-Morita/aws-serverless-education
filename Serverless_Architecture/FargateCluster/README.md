@@ -21,6 +21,7 @@ This solution is designed to support **education and testing environments**, pro
 - [Cloud-Native Application architecture: Fargate Cluster](#cloud-native-application-architecture-fargate-cluster)
   - [🪩 Table of Contents](#-table-of-contents)
   - [🪩 Architecture Overview](#-architecture-overview)
+    - [☻ Deployment strategy](#-deployment-strategy)
     - [☻ Deployment Order](#-deployment-order)
   - [🪩 Deployment Steps](#-deployment-steps)
     - [☻ Requirements](#-requirements)
@@ -66,6 +67,64 @@ The stack includes:
 |Details|
 |---|
 |![image](../../assets/FargateCluster-Overview.jpg?)|
+
+---
+
+<br>
+
+### ☻ Deployment strategy
+
+<br>
+
+|🟠AWS SAM with 🔴SSM Parameter Store|
+|---|
+|![image](../../assets/FargateCluster-SSMPS.jpg)|
+
+>🙄 Why 🔴**SSM Parameter Store** is Better than 🔴**CloudFormation** `Export`/`Import`?
+
+Using CloudFormation Export/Import can lead to **operational chaos**🫠. Here’s why:
+
+1. **Tightly Coupled Stacks:**
+    - If you update or delete the stack exporting values, dependent stacks **break**.
+    - You **cannot delete an export** while another stack imports it.
+2. **Lack of Visibility:**
+    - **No built-in tracking** of which stacks are consuming exported values.
+    - Hard to manage across <mark>**multi-account**</mark> or <mark>**multi-region**</mark> setups.
+3. **Deployment Order Problem:**
+    - The **exporting stack** must always deploy **first**, and the **importing stack** only after.
+    - **Rollback issues**: If the exporter fails, the importer cannot proceed.
+4. **No Cross-Account/Region Support:**
+    - `!ImportValue` works **only within the same account and region**.
+
+<br>
+
+>🙃 **Why Choose 🔴SSM Parameter Store?**
+
+🔴**SSM Parameter Store** offers a **modern, flexible, and decoupled approach** to infrastructure deployments:
+
+1. **Decoupled Stacks:**
+    - SSM parameters act as a <mark>**centralized state**</mark>.
+    - Stacks read from SSM without dependency on each other.
+2. **Cross-Account/Region Support:**
+    - SSM parameters can be accessed from <mark>**different accounts and regions**</mark> with proper permissions.
+3. **Versioning & History:**
+    - SSM provides **parameter versions**, simplifying rollbacks and troubleshooting.
+4. **Real-Time Updates:**
+    - Change the value **once** in SSM, and all consuming stacks will **automatically** use the updated value.
+
+<br>
+
+🛠️ **Enhancements & Best Practices**
+
+1. <mark>**Centralized Parameter Store**</mark> (P.S.)
+    - 🔒 **Encryption**: Use AWS KMS to encrypt sensitive parameters.
+    - 💰 **Tier Selection**: Use the **Standard Tier** unless you need history, expiration, or policies.
+    - 🔑 **Secure Access**: Restrict access with IAM policies like `ssm:GetParameter` and `ssm:GetParameterHistory`.
+    - 📏 **Automation**: Use AWS Config to identify unencrypted parameters.
+2. **Tagging for Simplicity:**
+    - Tag parameters by **environment** (e.g., Dev, Staging, Prod) to simplify management and querying.
+
+>💡 **Tip**: Always use the "String" type for stack parameters unless you specifically need "**SecureString**" or "**StringList**".
 
 ---
 
@@ -523,7 +582,7 @@ While convenient, this introduces potential risks:
 
 >```json
 >{
->    "Location": "http://SAM_CLI_SOURCE_BUCKET.s3.amazonaws.com/"
+>    "Location": "http://_Something_.s3.amazonaws.com/"
 >}
 >```
 
@@ -568,7 +627,10 @@ While convenient, this introduces potential risks:
         "Sid": "AllowSAMAccess",
         "Effect": "Allow",
         "Principal": {
-          "Service": "cloudformation.amazonaws.com"
+          "Service": [
+            "cloudformation.amazonaws.com",
+            "serverlessrepo.amazonaws.com"
+          ]
         },
         "Action": [
           "s3:PutObject",
@@ -604,6 +666,7 @@ While convenient, this introduces potential risks:
 <br>
 
 - Create a bucket-policy.json file:
+- Put it to the 🟢**S3 Bucket** for 🟠**AWS SAM**
 
 ```bash-session
 ### Replace placeholders with real values
@@ -612,21 +675,14 @@ While convenient, this introduces potential risks:
 # export ASSUMED_ROLE_NAME=`echo ${ASSUMED_ROLE_ARN} | cut -f 2 -d "/"`
 
 ### Apply the bucket policy
-# envsubst < bucket-policy.json | aws s3api put-bucket-policy --bucket ${SAM_CLI_SOURCE_BUCKET} --policy file://-
+# envsubst < bucket-policy-template.json > bucket-policy.json
+# aws s3api put-bucket-policy --bucket ${SAM_CLI_SOURCE_BUCKET} --policy file://bucket-policy.json
 # unset ACCOUNT_ID ASSUMED_ROLE_ARN ASSUMED_ROLE_NAME
 ```
 
 <br>
 
-- Put the bucket policy to 🟢**S3 Bucket** for 🟠**AWS SAM**
-
-```bash-session
-# aws s3api put-bucket-policy --bucket ${SAM_CLI_SOURCE_BUCKET} --policy file://policy.json
-```
-
-<br>
-
-3. 🐾 **Verify Installation:**
+1. 🐾 **Verify creation:**
 
 - (Optional) Check the result:
 
@@ -644,11 +700,27 @@ While convenient, this introduces potential risks:
 <summary>📖An example of output</summary>
 
 >```ps1
->Sid       : AWSCloudTrailAclCheck20150319
+>Sid       : ExplicitDenyPublicAccess
+>Effect    : Deny
+>Principal : *
+>Action    : *
+>Resource  : {arn:aws:s3:::sam-artifacts-fm7rp-oloif-egci9-exami-sirqh-roa-thgir-syawla-tfiws-rolyat, 
+>            arn:aws:s3:::sam-artifacts-fm7rp-oloif-egci9-exami-sirqh-roa-thgir-syawla-tfiws-rolyat/*}
+>Condition : @{Bool=}
+>
+>Sid       : AllowSAMAccess
 >Effect    : Allow
->Principal : @{Service=cloudtrail.amazonaws.com}
->Action    : s3:GetBucketAcl
->Resource  : arn:aws:s3:::BUCKET_NAME/*
+>Principal : @{Service=cloudformation.amazonaws.com}
+>Action    : {s3:PutObject, s3:GetObject}
+>Resource  : arn:aws:s3:::sam-artifacts-fm7rp-oloif-egci9-exami-sirqh-roa-thgir-syawla-tfiws-rolyat/*
+>Condition : @{StringEquals=}
+>
+>Sid       : AllowAccountOwnerToAvoidLockout
+>Effect    : Allow
+>Principal : @{AWS=System.Object[]}
+>Action    : s3:*
+>Resource  : {arn:aws:s3:::sam-artifacts-fm7rp-oloif-egci9-exami-sirqh-roa-thgir-syawla-tfiws-rolyat, 
+>            arn:aws:s3:::sam-artifacts-fm7rp-oloif-egci9-exami-sirqh-roa-thgir-syawla-tfiws-rolyat/*}
 >```
 
 >```json
@@ -712,16 +784,23 @@ This template creates a **basic 🟣VPC** with:
 
 - 📌 Required Parameters:
   - **`AvailabilityZones`**: <i>us-west-2a,us-west-2b,us-west-2c, us-west-2d</i> (Oregon) *You can adjust this however you like.
-  - **`VPCName`**: <i>TestVPC</i>
+  - **`VPCName`**: <i>TS-VPC</i>
 
 - `--config-env` (Environment name): <i>Basic-VPC</i>
 
 ```bash-session
 ### The first time
-# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --guided -t VPC.yaml
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --confirm-changeset --save-params \
+ --stack-name Basic-VPC --config-env Basic-VPC --s3-prefix Basic-VPC -t VPC.yaml
 
   ### After the second
-  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} -t VPC.yaml --config-env Basic-VPC
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env Basic-VPC
+```
+
+```bash-session
+Previewing CloudFormation changeset before deployment
+======================================================
+Deploy this changeset? [y/N]: y
 ```
 
 <details>
@@ -729,47 +808,42 @@ This template creates a **basic 🟣VPC** with:
 <summary>📖An example of output</summary>
 
 >```console
->Configuring SAM deploy
->======================
->        Looking for config file [samconfig.toml] :  Found
->        Reading default arguments  :  Success
+>Saved parameters to config file 'samconfig.toml' under environment 'Basic-VPC': {'template_file':                                              
+>'/home/cloudshell-user/Workshop/aws-serverless-education/Serverless_Architecture/FargateCluster/VPC.yaml', 's3_bucket':                        
+>'sam-artifacts-fm7rp-oloif-egci9-exami-sirqh-roa-thgir-syawla-tfiws-rolyat', 'confirm_changeset': True, 'stack_name': 'Basic-VPC'}                                                                                                                                   
 >
->        Setting default arguments for 'sam deploy'
->        =========================================
->        Stack Name [sam-app]: Basic-VPC
->        AWS Region [us-west-2]: 
->        Parameter AvailabilityZones [us-west-2a,us-west-2b,us-west-2c, us-west-2d]: 
->        Parameter VPCName [TestVPC]: 
->        #Shows you resources changes to be deployed and require a 'Y' to initiate deploy
->        Confirm changes before deploy [y/N]: y
->        #SAM needs permission to be able to create roles to connect to the resources in your template
->        Allow SAM CLI IAM role creation [Y/n]: 
->        #Preserves the state of previously provisioned resources when an operation fails
->        Disable rollback [y/N]: 
->        Save arguments to configuration file [Y/n]: 
->        SAM configuration file [samconfig.toml]: 
->        SAM configuration environment [default]: Basic-VPC
->:
 >        Deploying with following values
 >        ===============================
 >        Stack name                   : Basic-VPC
 >        Region                       : us-west-2
 >        Confirm changeset            : True
 >        Disable rollback             : False
->        Deployment s3 bucket         : aws-sam-cli-managed-default-26df4abd-1c85-40c2-b6fe-93bb90e3f443
->        Capabilities                 : ["CAPABILITY_IAM"]
->        Parameter overrides          : {"AvailabilityZones": "us-west-2a,us-west-2b,us-west-2c, us-west-2d", "VPCName": "TestVPC"}
+>        Deployment s3 bucket         : sam-artifacts-i8dcn-ptyw8-kejkz-thgir-syawla-tfiws-rolyat
+>        Capabilities                 : null
+>        Parameter overrides          : {}
 >        Signing Profiles             : {}
+>:
+>Previewing CloudFormation changeset before deployment
+>======================================================
+>Deploy this changeset? [y/N]: y
 >:
 >Outputs                                                                                                                                    
 >--------------------------------------------------------------------------------------------------------------------------------------------
->Key                 PrivateSubnetIDs                                                                                                       
->Description         The IDs of the private subnets                                                                                         
->Value               subnet-0d7f2ab2debcfaec5,subnet-041e2332ed5212e8d                                                                      
+>Key                 PrivateSubnetID2                                                                                                       
+>Description         The ID of the private subnet2                                                                                          
+>Value               subnet-041e2332ed5212e8d                                                                                               
 >
->Key                 PublicSubnetIDs                                                                                                        
->Description         The IDs of the public subnets                                                                                          
->Value               subnet-0bd101d568021aa90,subnet-0d810cc3927a7c34f                                                                      
+>Key                 PrivateSubnetID1                                                                                                       
+>Description         The ID of the private subnet1                                                                                          
+>Value               subnet-0d7f2ab2debcfaec5                                                                                               
+>
+>Key                 PublicSubnetID2                                                                                                        
+>Description         The ID of the public subnet2                                                                                           
+>Value               subnet-060c837df9ac244cb                                                                                               
+>
+>Key                 PublicSubnetID1                                                                                                        
+>Description         The ID of the public subnet1                                                                                           
+>Value               subnet-0bd101d568021aa90                                                                                               
 >
 >Key                 VPCID                                                                                                                  
 >Description         The ID of the created VPC                                                                                              
@@ -802,23 +876,9 @@ This template stores critical infrastructure parameters in **AWS Systems Manager
 
 <br>
 
-> 💡 **Note:**
-> Three Approaches for getting values.
-
-- Comparison of Methods:
-
-||Single Stack|Cross-Stack Exports/Imports|🔴**SSM Parameter Store**|
-|---|---|---|---|
-| When to Use     | Small projects | Separate but coupled stacks |Most dynamic setup (change values without redeploy)|
-| Flexibility     | ❌ Low|✅ Medium|<mark>🫶🏻High✨</mark>|
-| Complexity      | ✅ Simple|❌ Somewhat Complex|Easy|
-| **When to Use** | Basic Environments|Microservices|Microservices, Enterprise & Multi-Region|
-
-<br>
-
 - 📌 Required Parameters:
   - `ACMCertificateArn` : <i>arn:aws:acm:us-west-2:<ACCOUNT-ID>:certificate/xxxx</i>
-  - `VPCID` : <i>vpc-xxxx</i>
+  - `VPCID` : <i>vpc-xxxx</i> 
   - `PrivateSubnet1` : <i>subnet-xxxa</i>
   - `PrivateSubnet2` : <i>subnet-xxxb</i>
   - `PublicSubnet1` : <i>subnet-xxxc</i>
@@ -826,11 +886,11 @@ This template stores critical infrastructure parameters in **AWS Systems Manager
   - `NatGatewayID` : **Unknown** (Update later)
   - `ALBSecurityGroupName` : **Unknown** (Update later)
   - `ALBTargetGroupARN` : **Unknown** (Update later)
-  - `ALBName` : <i>TSALB</i>
-  - `ALBS3BucketName` : <i>alb-logs-2v9dr-u4aod-vxq6f-a5ow3-thgir-syawla-tfiws-rolyat</i>
+  - `ALBName` : <i>TS-ALB</i>
+  - `ALBS3BucketName` : <i>alb-logs-2v9dr-u4aod-vxq6f-a5ow3-thgir-syawla-tfiws-rolyat</i> (Update later)
   - `ALBPrefix` : <i>alb-access-logs</i>
-  - `ECSClusterName` : <i>TSCluster</i>
-  - `ECSServiceName` : <i>TSService</i>
+  - `ECSClusterName` : <i>TS-ECS-Cluster</i>
+  - `ECSServiceName` : <i>TS-ECS-Service</i>
   - `ECSTaskDefinitionName`: <i>TS-11</i>
   - `ECSContainerName`: <i>TTPD-nginx</i>
   - [💡Tips: **General purpose 🟢S3 Bucket naming rules**](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html#create-bucket-name-guid) 
@@ -840,15 +900,107 @@ This template stores critical infrastructure parameters in **AWS Systems Manager
 
 <br>
 
-- `--config-env` (Environment name): <i>SSM</i>
+> 💡 **Note:**
+> Oh, you've lost previous outputs?🥲  
+>```bash-session
+># aws acm list-certificates --includes 'keyTypes=[EC_prime256v1]'
+># sam list stack-outputs --stack-name Basic-VPC
+>```
+
+- `--config-env` (Environment name): <i>SSM-PS</i>
 
 ```bash-session
 ### The first time
-# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --guided -t SSM.yaml
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --confirm-changeset --save-params \
+ --stack-name SSM-PS --config-env SSM-PS --s3-prefix SSM-PS -t SSM.yaml \
+ --parameter-overrides ParameterKey=ACMCertificateArn,ParameterValue= \
+ ParameterKey=VPCID,ParameterValue= \
+ ParameterKey=PublicSubnet1,ParameterValue= \
+ ParameterKey=PublicSubnet2,ParameterValue= \
+ ParameterKey=PrivateSubnet1,ParameterValue= \
+ ParameterKey=PrivateSubnet2,ParameterValue=
 
   ### After the second
-  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} -t SSM.yaml --config-env SSM
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env SSM-PS
 ```
+
+```bash-session
+Previewing CloudFormation changeset before deployment
+======================================================
+Deploy this changeset? [y/N]: y
+```
+
+<details>
+
+<summary>📖An example of output</summary>
+
+>```console
+>Saved parameters to config file 'samconfig.toml' under environment 'SSM-PS': {'template_file':                                                 
+>'/home/cloudshell-user/Workshop/aws-serverless-education/Serverless_Architecture/FargateCluster/SSM.yaml', 's3_bucket':                        
+>'sam-artifacts-fm7rp-oloif-egci9-exami-sirqh-roa-thgir-syawla-tfiws-rolyat', 'capabilities': ('CAPABILITY_IAM',), 'confirm_changeset': True, 'stack_name':     
+>'SSM-PS', 's3_prefix': 'SSM-PS', 'parameter_overrides': {'ACMCertificateArn':                                                                  
+>'arn:aws:acm:us-west-2:041920240204:certificate/ctfiws-3337-4cbf-bedf-rolyatd1a877', 'VPCID': 'vpc-04eb144fbc892a756', 'PublicSubnet1':      
+>'subnet-0bd101d568021aa90', 'PublicSubnet2': 'subnet-0d810cc3927a7c34f', 'PrivateSubnet1': 'subnet-0d7f2ab2debcfaec5', 'PrivateSubnet2':            
+>'subnet-041e2332ed5212e8d'}}                                                                                                                        
+>
+>        Deploying with following values
+>        ===============================
+>        Stack name                   : SSM-PS
+>        Region                       : us-west-2
+>        Confirm changeset            : True
+>        Disable rollback             : False
+>        Deployment s3 bucket         : sam-artifacts-fm7rp-oloif-egci9-exami-sirqh-roa-thgir-syawla-tfiws-rolyat
+>        Capabilities                 : null
+>        Parameter overrides          : {"ACMCertificateArn": "arn:arn:aws:acm:us-west-2:041920240204:certificate/ctfiws-3337-4cbf-bedf-rolyatd1a877", "VPCID": "vpc-06dd7ceaf6fd899a6", "PublicSubnet1": "subnet-0bd101d568021aa90", "PublicSubnet2": "subnet-0d810cc3927a7c34f", "PrivateSubnet1": "subnet-0d7f2ab2debcfaec5", "PrivateSubnet2": "subnet-041e2332ed5212e8d"}
+>        Signing Profiles             : {}
+>:
+>Successfully created/updated stack - SSM-PS in us-west-2
+>```
+
+</details>
+
+<br>
+
+- (Optional) Check the result:
+
+```bash-session
+# pwsh -C 'aws ssm describe-parameters | convertFrom-json | select-object -expandProperty Parameters | Select-Object Name'
+
+### More details
+# pwsh -C 'aws ssm describe-parameters | convertFrom-json | select-object -expandProperty Parameters'
+```
+
+>```ps1
+>Name
+>----
+>/FargateCluster/ACMCertificateArn
+>/FargateCluster/ALB/ALBName
+>/FargateCluster/ALB/ALBPrefix
+>/FargateCluster/ALB/S3BucketName
+>/FargateCluster/ALB/SecurityGroupName
+>/FargateCluster/ALB/TargetGroupARN
+>/FargateCluster/ECS/ClusterName
+>/FargateCluster/ECS/ContainerName
+>/FargateCluster/ECS/ServiceName
+>/FargateCluster/ECS/TaskDefinitionName
+>/FargateCluster/VPC/NatGatewayID
+>/FargateCluster/VPC/PrivateSubnet1
+>/FargateCluster/VPC/PrivateSubnet2
+>/FargateCluster/VPC/PublicSubnet1
+>/FargateCluster/VPC/PublicSubnet2
+>/FargateCluster/VPC/VPCID
+>
+>
+>Name             : /FargateCluster/ACMCertificateArn
+>ARN              : arn:arn:aws:acm:us-west-2:041920240204:certificate/ctfiws-3337-4cbf-bedf-rolyatd1a877
+>Type             : String
+>LastModifiedDate : 2/24/2025 5:11:57 AM
+>Description      : SSL/TLS certificate ARN for ALB.
+>Version          : 1
+>Tier             : Standard
+>Policies         : {}
+>DataType         : text
+>```
 
 ---
 
@@ -916,18 +1068,52 @@ This template adds a 🟣**NAT Gateway**, `security groups`, and optional 🟣**
 
 ```bash-session
 ### The first time
-# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --guided -t VPC_Extras_Gen2Endpoint.yaml
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --confirm-changeset --save-params \
+ --stack-name VPC-Extras-Gen2Endpoint --config-env VPC-Extras-Gen2Endpoint --s3-prefix VPC-Extras-Gen2Endpoint -t VPC_Extras_Gen2Endpoint.yaml
 
   ### After the second
-  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} -t VPC_Extras_Gen2Endpoint.yaml --config-env VPC-Extras-Gen2Endpoint
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env VPC-Extras-Gen2Endpoint
 
 
 ### The first time
-# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --guided -t VPC_Extras_Flowlogs.yaml
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --capabilities CAPABILITY_IAM --confirm-changeset --save-params \
+ --stack-name VPC-Extras-Flowlogs --config-env VPC-Extras-Flowlogs --s3-prefix VPC-Extras-Flowlogs -t VPC_Extras_Flowlogs.yaml
 
   ### After the second
-  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} -t VPC_Extras_Flowlogs.yaml --config-env VPC-Extras-Flowlogs
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env VPC-Extras-Flowlogs
 ```
+
+```bash-session
+Previewing CloudFormation changeset before deployment
+======================================================
+Deploy this changeset? [y/N]: y
+```
+
+<details>
+
+<summary>📖An example of output</summary>
+
+>```console
+>Saved parameters to config file 'samconfig.toml' under environment 'VPC-Extras-Gen2Endpoint': {'template_file':                                
+>'/home/cloudshell-user/Workshop/aws-serverless-education/Serverless_Architecture/FargateCluster/VPC_Extras_Gen2Endpoint.yaml', 's3_bucket':    
+>'sam-artifacts-fm7rp-oloif-egci9-exami-sirqh-roa-thgir-syawla-tfiws-rolyat', 'confirm_changeset': True, 'stack_name': 'VPC-Extras-Gen2Endpoint', 's3_prefix':  
+>'VPC-Extras-Gen2Endpoint'}                                                                                                                     
+>
+>        Deploying with following values
+>        ===============================
+>        Stack name                   : VPC-Extras-Gen2Endpoint
+>        Region                       : us-west-2
+>        Confirm changeset            : True
+>        Disable rollback             : False
+>        Deployment s3 bucket         : sam-artifacts-fm7rp-oloif-egci9-exami-sirqh-roa-thgir-syawla-tfiws-rolyat
+>        Capabilities                 : null
+>        Parameter overrides          : {}
+>        Signing Profiles             : {}
+>:
+>Successfully created/updated stack - VPC-Extras-Gen2Endpoint in us-west-2
+>```
+
+</details>
 
 ---
 
@@ -960,17 +1146,21 @@ This step sets up ALB logs forwarding to CloudWatch Logs
 
 <br>
 
-- `--config-env` (Environment name): <i>ALBLogsForwarder</i>
+- `--config-env` (Environment name): <i>ALB-LogsForwarder</i>
 
 ```bash-session
-### Build
-# sam build -t ALB_Logs_Forwarder.yaml
-
 ### The first time
-# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --guided -t ALB_Logs_Forwarder.yaml
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --capabilities CAPABILITY_IAM --confirm-changeset --save-params \
+ --stack-name ALB-LogsForwarder --config-env ALB-LogsForwarder --s3-prefix ALB-LogsForwarder -t ALB_Logs_Forwarder.yaml
 
   ### After the second
-  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} -t ALB_Logs_Forwarder.yaml --config-env ALBLogsForwarder
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env ALB-LogsForwarder
+```
+
+```bash-session
+Previewing CloudFormation changeset before deployment
+======================================================
+Deploy this changeset? [y/N]: y
 ```
 
 ---
@@ -1010,10 +1200,17 @@ This step sets up ALB logs forwarding to CloudWatch Logs
 
 ```bash-session
 ### The first time
-# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --guided -t ALB_Internal.yaml
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --capabilities CAPABILITY_IAM --confirm-changeset --save-params \
+ --stack-name ALB-Internal --config-env ALB-Internal --s3-prefix ALB-Internal -t ALB_Internal.yaml
 
   ### After the second
-  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} -t ALB_Internal.yaml --config-env ALB-Internal
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env ALB-Internal
+```
+
+```bash-session
+Previewing CloudFormation changeset before deployment
+======================================================
+Deploy this changeset? [y/N]: y
 ```
 
 ---
@@ -1063,6 +1260,25 @@ This step sets up ALB logs forwarding to CloudWatch Logs
   # docker images
 ```
 
+<details>
+
+<summary>📖An example of output</summary>
+
+>```console
+>latest: Pulling from nginx/nginx
+>3a4d501ec8d0: Pull complete 
+>1529751f7538: Pull complete 
+>bbefd32e7dcb: Pull complete 
+>47cc26834fb6: Pull complete 
+>aba9a01aa562: Pull complete 
+>25ef5805725b: Pull complete 
+>f6eaf43e06b3: Pull complete 
+>Digest: sha256:f62145615fb0af3b134ca97f6df890dab3172eb14ded120ec09fe3ebde90af25
+>Status: Downloaded newer image for public.ecr.aws/nginx/nginx:latest
+>```
+
+</details>
+
 <br>
 
 ```bash-session
@@ -1076,7 +1292,7 @@ This step sets up ALB logs forwarding to CloudWatch Logs
 # docker push ${ACCOUNT_ID:-NULL}.dkr.ecr.us-west-2.amazonaws.com/${REPO_NAME:-NULL}:latest
 
   ### Option: if you want to update current ECS Cluster, then
-  # aws ecs update-service --cluster TestCluster --service ECSService --force-new-deployment
+  # aws ecs update-service --cluster TSCluster --service ECSService --force-new-deployment
 
 ### Logout from AWS ECR
 # docker logout ${ACCOUNT_ID}.dkr.ecr.us-west-2.amazonaws.com
@@ -1094,10 +1310,17 @@ This step sets up ALB logs forwarding to CloudWatch Logs
 
 ```bash-session
 ### The first time
-# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --guided -t FargateCluster.yaml
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --capabilities CAPABILITY_IAM --confirm-changeset --save-params \
+ --stack-name FargateCluster --config-env FargateCluster --s3-prefix FargateCluster -t FargateCluster.yaml
 
   ### After the second
-  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} -t FargateCluster.yaml --config-env FargateCluster
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env FargateCluster
+```
+
+```bash-session
+Previewing CloudFormation changeset before deployment
+======================================================
+Deploy this changeset? [y/N]: y
 ```
 
 ---
@@ -1126,14 +1349,21 @@ This step sets up ALB logs forwarding to CloudWatch Logs
 
 <br>
 
-- `--config-env` (Environment name): <i>ECSAppAutoScaling</i>
+- `--config-env` (Environment name): <i>ECS-AppAutoScaling</i>
 
 ```bash-session
 ### The first time
-# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --guided -t AppAutoScaling.yaml
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --capabilities CAPABILITY_IAM --confirm-changeset --save-params \
+ --stack-name ECS-AppAutoScaling --config-env ECS-AppAutoScaling --s3-prefix ECS-AppAutoScaling -t AppAutoScaling.yaml
 
   ### After the second
-  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} -t AppAutoScaling.yaml --config-env ECSAppAutoScaling
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env ECS-AppAutoScaling
+```
+
+```bash-session
+Previewing CloudFormation changeset before deployment
+======================================================
+Deploy this changeset? [y/N]: y
 ```
 
 ---
@@ -1151,7 +1381,7 @@ This step sets up ALB logs forwarding to CloudWatch Logs
 # cat > certificate.crt
 Ctrl+D
 
-# ALB_DNS=TestALB-545957675.us-west-2.elb.amazonaws.com
+# ALB_DNS=TSALB-545957675.us-west-2.elb.amazonaws.com
 # curl -vk --cacert certificate.crt https://${ALB_DNS:-NULL} -H "Host: Betty.swiftie.com"
 # curl -vk --cacert certificate.crt https://${ALB_DNS:-NULL} -H "Host: James.swiftie.com"
 ```
@@ -1174,24 +1404,47 @@ Connection: close
 
 ```bash-session
 ### 🔴Application Auto Scaling
-# sam delete --config-env ECSAppAutoScaling
+# sam delete --config-env ECS-AppAutoScaling
+
 
 ### 🟠FargateCluster💰 and 🟠ECR
 # sam delete --config-env FargateCluster
 # aws ecr delete-repository --repository-name debut
 
+
 ### 🔴ALB💰
 # sam delete --config-env ALB-Internal
+
 
 ### 🟠Lambda and 🟢S3
 # PRAM_NAME=/FargateCluster/ALB/S3BucketName
 # S3_BUCKET_NAME=`aws ssm get-parameter --name ${PRAM_NAME:-NULL} | jq -r '.Parameter.Value'`
+
+### Delete all objects, including Versions and Delete-markers
+# \aws s3api delete-objects --bucket ${S3_BUCKET_NAME} \
+--delete "$(\aws s3api list-object-versions --bucket ${S3_BUCKET_NAME} \
+--query='{Objects: Versions[].{Key:Key,VersionId:VersionId}}' --output json)" 2>/dev/null
+
+  ### Also delete Delete-markers (if any)
+  # \aws s3api delete-objects --bucket ${S3_BUCKET_NAME} \
+  --delete "$(\aws s3api list-object-versions --bucket ${S3_BUCKET_NAME} \
+  --query='{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}' --output json)" 2>/dev/null
+
+### Confirm Bucket is Empty
+# aws s3api list-object-versions --bucket ${S3_BUCKET_NAME}
+
 # aws s3 rb s3://${S3_BUCKET_NAME:-NULL} --force
-# sam delete --config-env ALBLogsForwarder
+# sam delete --config-env ALB-LogsForwarder
+
 
 ### 🟣VPC-Extras💰
 # sam delete --config-env VPC-Extras-Gen2Endpoint
 # sam delete --config-env VPC-Extras-Flowlogs
+
+
+### 🔴SSM ParameterStore
+# sam delete --config-env SSM-PS
+
 
 ### 🟣VPC
 # sam delete --config-env Basic-VPC
@@ -1206,6 +1459,26 @@ Connection: close
 >
 >SAM CLI update available (1.134.0); (1.131.0 installed)
 >To download: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html
+>```
+
+>```console
+>{
+>    "Deleted": [
+>        {
+>            "Key": "Basic-VPC/58b5a0cf8ff24b3c7a895642d642a825.template",
+>            "VersionId": "null"
+>        }
+>    ]
+>}
+>
+>
+>{
+>    "RequestCharged": null,
+>    "Prefix": ""
+>}
+>
+>
+>remove_bucket: sam-artifacts-fm7rp-oloif-egci9-exami-sirqh-roa-thgir-syawla-tfiws-rolyat
 >```
 
 ---
