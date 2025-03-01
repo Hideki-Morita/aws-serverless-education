@@ -1,24 +1,28 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Part-2 - A Basic VPC network setup for testing purposes, including subnets, route tables, and endpoints.
+Description: Part-3 - Adds additional networking resources like NAT Gateway and VPC Endpoints.
 
 Parameters:
   VPCID:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /FargateCluster/VPC/VPCID
-    Description: The ID of the existing VPC.
+    Description: "The ID of the existing VPC."
   PublicSubnetID:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /FargateCluster/VPC/PublicSubnet1
-    Description: The ID of the public subnet that you want
+    Description: "The ID of the public subnet that you want"
   PrivateSubnet1:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /FargateCluster/VPC/PrivateSubnet1
-    Description: The first private subnet.
+    Description: "The first private subnet."
   PrivateSubnet2:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /FargateCluster/VPC/PrivateSubnet2
-    Description: The second private subnet.
+    Description: "The second private subnet."
+  Stage:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /FargateCluster/StageName
+    Description: "The Name of the environment."
 
 Resources:
   ### NAT Gateway ###
@@ -31,9 +35,9 @@ Resources:
         - Key: Name
           Value: "EIP-of-NAT-Gateway"
         - Key: Environment
-          Value: Test
+          Value: !Ref Stage
         - Key: Where
-          Value: us-west-2
+          Value: !Ref "AWS::Region"
         - Key: For
           Value: Education
         - Key: System
@@ -49,9 +53,9 @@ Resources:
         - Key: Name
           Value: !Sub "${VPCID}-NAT-Gateway"
         - Key: Environment
-          Value: Test
+          Value: !Ref Stage
         - Key: Where
-          Value: us-west-2
+          Value: !Ref "AWS::Region"
         - Key: For
           Value: Education
         - Key: System
@@ -73,9 +77,9 @@ Resources:
         - Key: Name
           Value: "Private-General-SG"
         - Key: Environment
-          Value: Test
+          Value: !Ref Stage
         - Key: Where
-          Value: us-west-2
+          Value: !Ref "AWS::Region"
         - Key: For
           Value: Education
         - Key: System
@@ -99,9 +103,9 @@ Resources:
         - Key: Name
           Value: "Gen2Endpoint-ECR-API"
         - Key: Environment
-          Value: Test
+          Value: !Ref Stage
         - Key: Where
-          Value: us-west-2
+          Value: !Ref "AWS::Region"
         - Key: For
           Value: Education
         - Key: System
@@ -123,9 +127,9 @@ Resources:
         - Key: Name
           Value: "Gen2Endpoint-ECR-DKR"
         - Key: Environment
-          Value: Test
+          Value: !Ref Stage
         - Key: Where
-          Value: us-west-2
+          Value: !Ref "AWS::Region"
         - Key: For
           Value: Education
         - Key: System
@@ -144,9 +148,9 @@ Resources:
         - Key: Name
           Value: "Gen1Endpoint-S3"
         - Key: Environment
-          Value: Test
+          Value: !Ref Stage
         - Key: Where
-          Value: us-west-2
+          Value: !Ref "AWS::Region"
         - Key: For
           Value: Education
         - Key: System
@@ -169,9 +173,9 @@ Resources:
         - Key: Name
           Value: "Gen2Endpoint-CWLogs"
         - Key: Environment
-          Value: Test
+          Value: !Ref Stage
         - Key: Where
-          Value: us-west-2
+          Value: !Ref "AWS::Region"
         - Key: For
           Value: Education
         - Key: System
@@ -195,9 +199,9 @@ Resources:
         - Key: Name
           Value: "Gen2Endpoint-SecurityGroup"
         - Key: Environment
-          Value: Test
+          Value: !Ref Stage
         - Key: Where
-          Value: us-west-2
+          Value: !Ref "AWS::Region"
         - Key: For
           Value: Education
         - Key: System
@@ -212,9 +216,9 @@ Resources:
         - Key: Name
           Value: "Private-RouteTable-01"
         - Key: Environment
-          Value: Test
+          Value: !Ref Stage
         - Key: Where
-          Value: us-west-2
+          Value: !Ref "AWS::Region"
         - Key: For
           Value: Education
         - Key: System
@@ -228,9 +232,9 @@ Resources:
         - Key: Name
           Value: "Private-RouteTable-02"
         - Key: Environment
-          Value: Test
+          Value: !Ref Stage
         - Key: Where
-          Value: us-west-2
+          Value: !Ref "AWS::Region"
         - Key: For
           Value: Education
         - Key: System
@@ -278,7 +282,7 @@ Outputs:
     Description: The ID of SecurityGroup for General Purpose within Private Subnets
     Value: !Ref PrivateSubnetGeneralSecurityGroup
 
-  ### VPC Interface Endpoints (Gen.2) ###
+  ### VPC Interface Endpoints (Gen 2) ###
   VPCEndpointECRAPI:
     Description: "VPC Interface Endpoint ID for ECR API (Used by ECS to pull images from ECR)"
     Value: !Ref VPCEndpointECRAPI

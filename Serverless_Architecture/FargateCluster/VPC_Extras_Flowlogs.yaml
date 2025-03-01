@@ -1,15 +1,16 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Part-3 - A Basic VPC network setup for testing purposes, including subnets, route tables, and endpoints.
+Description: Part-4 - Enables VPC Flow Logs for monitoring network traffic.
 
 Parameters:
   VPCID:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /FargateCluster/VPC/VPCID
-    Description: The ID of the existing VPC.
+    Description: "The ID of the existing VPC."
   Stage:
-    Type: String
-    Default: Test
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /FargateCluster/StageName
+    Description: "The Name of the environment."
 
 Resources:
   ### VPC Flow Logs ###
@@ -43,7 +44,7 @@ Resources:
                 - vpc-flow-logs.amazonaws.com
             Action:
               - sts:AssumeRole
-      PermissionsBoundary: !Sub "arn:aws:iam::${AWS::AccountId}:policy/Protect-Me" # Attach the required boundary
+      #PermissionsBoundary: !Sub "arn:aws:iam::${AWS::AccountId}:policy/Something" # Attach the required boundary
       Policies:
         - PolicyName: FlowLogPolicy
           PolicyDocument:
@@ -61,11 +62,11 @@ Resources:
 Outputs:
   ### VPC Flow Logs ###
   VPCFlowLogGroupName:
-    Description: "📜 CloudWatch Log Group Name for VPC Flow Logs"
+    Description: "CloudWatch Log Group Name for VPC Flow Logs"
     Value: !Ref VPCFlowLogGroup
 
   VPCFlowLogsID:
-    Description: "🔍 VPC Flow Logs ID (Logs network traffic for security & monitoring)"
+    Description: "VPC Flow Logs ID (Logs network traffic for security & monitoring)"
     Value: !Ref VPCFlowLogs
 
   ### ⚠️ Cost Warnings ###

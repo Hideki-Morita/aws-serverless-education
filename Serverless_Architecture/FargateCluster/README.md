@@ -21,7 +21,7 @@ This solution is designed to support **education and testing environments**, pro
 - [Cloud-Native Application architecture: Fargate Cluster](#cloud-native-application-architecture-fargate-cluster)
   - [🪩 Table of Contents](#-table-of-contents)
   - [🪩 Architecture Overview](#-architecture-overview)
-    - [☻ Deployment strategy](#-deployment-strategy)
+    - [☻ About Deployment strategy](#-about-deployment-strategy)
     - [☻ Deployment Order](#-deployment-order)
   - [🪩 Deployment Steps](#-deployment-steps)
     - [☻ Requirements](#-requirements)
@@ -30,13 +30,21 @@ This solution is designed to support **education and testing environments**, pro
     - [0️⃣ Create a Virtual Environment (Recommended)](#0️⃣-create-a-virtual-environment-recommended)
     - [1️⃣ 🔴ACM - Upload SSL/TLS Certificates](#1️⃣-acm---upload-ssltls-certificates)
     - [2️⃣ Deploy 🟣VPC](#2️⃣-deploy-vpc)
-      - [✰ (Optional) Create Secure 🟢S3 Bucket for SAM Artifacts](#-optional-create-secure-s3-bucket-for-sam-artifacts)
-      - [✰ Basic VPC Setup](#-basic-vpc-setup)
-        - [✦ 🔴SSM ParameterStore settings](#-ssm-parameterstore-settings)
-      - [✰ 🟣VPC-Extras💰](#-vpc-extras)
+      - [✰ 🐾 A. Create Secure 🟢S3 Bucket for 🟠SAM Artifacts](#--a-create-secure-s3-bucket-for-sam-artifacts)
+        - [✦ 🐾 **Create new 🟢S3 Bucket:**](#--create-new-s3-bucket)
+        - [✦ 🐾 **Apply a 📄Secure Bucket Policy**](#--apply-a-secure-bucket-policy)
+        - [✦ 🐾 **Verify creation:**](#--verify-creation)
+      - [✰ 🐾 B. 🔴SSM Parameter Store settings](#--b-ssm-parameter-store-settings)
+      - [✰ 🐾 C. Basic 🟣VPC Setup](#--c-basic-vpc-setup)
+        - [✦ 🐾 **Create 🟣Networking:**](#--create-networking)
+        - [✦ 🐾 **Update the values of 🔴SSM Parameter Store:**](#--update-the-values-of-ssm-parameter-store)
+        - [✦ 🐾 **Verify creation:**](#--verify-creation-1)
+      - [✰ 🐾 D. 🟣VPC-Extras💰](#--d-vpc-extras)
     - [3️⃣ Deploy 🟠Lambda for ALB Logs Forwarding \& 🟢S3](#3️⃣-deploy-lambda-for-alb-logs-forwarding--s3)
     - [4️⃣ Deploy Internal 🔴ALB💰](#4️⃣-deploy-internal-alb)
     - [5️⃣ Deploy 🟠ECR \& 🟠ECS Fargate Cluster💰](#5️⃣-deploy-ecr--ecs-fargate-cluster)
+      - [✰ 🐾 A. **Create new 🟠ECR Private Repo:**](#--a-create-new-ecr-private-repo)
+      - [✰ 🐾 B. **Deploy 🟠Fargate Cluster:**](#--b-deploy-fargate-cluster)
     - [6️⃣ Deploy 🔴Application Auto Scaling](#6️⃣-deploy-application-auto-scaling)
     - [☻ Test the Connection](#-test-the-connection)
     - [🚮 Clean it up](#-clean-it-up)
@@ -53,12 +61,13 @@ This solution is designed to support **education and testing environments**, pro
 The deployment is structured into **multiple modular 🟠SAM templates**, each responsible for a specific part of the infrastructure.  
 The stack includes:
 
-- 🟣**Networking** (VPC, Subnets, Internet/NAT Gateway, VPC Endpoints(Gen.1 and 2))
+- 🟣**Networking** (VPC, Subnets, ACLs, RouteTables, Security Groups, Internet/NAT Gateway, VPC Endpoints(Gen.1 and 2))
 - 🔴**SSM Parameter Store** for configuration management
-- 🟠**Fargate cluster** and 🔴**Application Auto Scaling** for serverless container workloads
-- 🔴**Application Load Balancer** (ALB) for routing traffic
-- 🔴**AWS Certificate Manager** (ACM) for provide End-to-End encrypt transit 
 - **Observability and logging**(ALBLogs-Forwarder(🟠**Lambda**, 🟢**S3**))  
+- 🔴**Application Load Balancer** (ALB) for routing traffic
+- 🟠**Fargate cluster** and 🔴**Application Auto Scaling** for serverless container workloads
+- <i>Manual operations</i>:
+  - 🔴**AWS Certificate Manager** (ACM) for provide End-to-End encrypt transit 
 
 |High-level overview|
 |---|
@@ -72,13 +81,15 @@ The stack includes:
 
 <br>
 
-### ☻ Deployment strategy
+### ☻ About Deployment strategy
 
 <br>
 
 |🟠AWS SAM with 🔴SSM Parameter Store|
 |---|
 |![image](../../assets/FargateCluster-SSMPS.jpg)|
+
+<br>
 
 >🙄 Why 🔴**SSM Parameter Store** is Better than 🔴**CloudFormation** `Export`/`Import`?
 
@@ -114,13 +125,13 @@ Using CloudFormation Export/Import can lead to **operational chaos**🫠. Here�
 
 <br>
 
-🛠️ **Enhancements & Best Practices**
+<u>🛠️ **Enhancements & Best Practices**</u>
 
 1. <mark>**Centralized Parameter Store**</mark> (P.S.)
-    - 🔒 **Encryption**: Use AWS KMS to encrypt sensitive parameters.
+    - 🔒 **Encryption**: Use 🔴**AWS KMS** to encrypt sensitive parameters.
     - 💰 **Tier Selection**: Use the **Standard Tier** unless you need history, expiration, or policies.
-    - 🔑 **Secure Access**: Restrict access with IAM policies like `ssm:GetParameter` and `ssm:GetParameterHistory`.
-    - 📏 **Automation**: Use AWS Config to identify unencrypted parameters.
+    - 🔑 **Secure Access**: Restrict access with 🔴**IAM policies** like `ssm:GetParameter` and `ssm:GetParameterHistory`.
+    - 📏 **Automation**: Use 🔴**AWS Config** to identify unencrypted parameters.
 2. **Tagging for Simplicity:**
     - Tag parameters by **environment** (e.g., Dev, Staging, Prod) to simplify management and querying.
 
@@ -138,14 +149,14 @@ Using CloudFormation Export/Import can lead to **operational chaos**🫠. Here�
 
 | yaml | purpose |
 |---|---|
-| 1. VPC.yaml | Creates the VPC, subnets, and routing. |
-| 2. SSM.yaml | Stores important parameters (e.g., VPC ID, ALB settings) in SSM Parameter Store. |
-| 3. VPC_Extras_Gen2Endpoint.yaml | Adds additional networking resources like NAT Gateway and VPC Endpoints. |
-| 4. VPC_Extras_Flowlogs.yaml | Enables VPC Flow Logs for monitoring network traffic. |
-| 5. ALB_Logs_Forwarder.yaml | Sets up forwarding of ALB access logs to S3 or another logging solution. |
-| 6. ALB_Internal.yaml | Deploys the internal ALB for routing requests within the VPC. |
-| 7. FargateCluster.yaml | Provisions the ECS Fargate cluster for running serverless containerized applications. |
-| 8. AppAutoScaling.yaml | Configures application auto-scaling policies for Fargate tasks. |
+| 1. **SSM_PS.yaml** | Stores important parameters (e.g., VPC ID, ALB settings) in SSM Parameter Store. |
+| 2. **Basic_VPC.yaml** | Creates the VPC, subnets, and routing. |
+| 3. **VPC_Extras_Gen2Endpoint.yaml** | Adds additional networking resources like NAT Gateway and VPC Endpoints. |
+| 4. **VPC_Extras_Flowlogs.yaml** | Enables VPC Flow Logs for monitoring network traffic. |
+| 5. **ALB_LogsForwarder.yaml** | Sets up forwarding of ALB access logs to S3 or another logging solution. |
+| 6. **ALB_Internal.yaml** | Deploys the internal ALB for routing requests within the VPC. |
+| 7. **FargateCluster.yaml** | Provisions the ECS Fargate cluster for running serverless containerized applications. |
+| 8. **AppAutoScaling.yaml** | Configures application auto-scaling policies for Fargate tasks. |
 
 ---
 
@@ -300,9 +311,9 @@ This isolates dependencies required for this project from your **global Python e
 
 <br>
 
-1. 🐾 **Navigate to your working directory & clone the repository:**
-
 - 📌 e.g., <mark>**On 🔵CloudShell**</mark> (AWS managed network)
+
+1. 🐾 **Navigate to your working directory & clone the repository:**
 
 ```bash-session
 # cd /path/to/your/project
@@ -318,7 +329,7 @@ This isolates dependencies required for this project from your **global Python e
 >remote: Total 69 (delta 22), reused 59 (delta 12), pack-reused 0 (from 0)
 >Receiving objects: 100% (69/69), 885.91 KiB | 15.27 MiB/s, done.
 >Resolving deltas: 100% (22/22), done.
-```
+>```
 
 - Create a virtual environment:
 
@@ -350,7 +361,7 @@ This isolates dependencies required for this project from your **global Python e
 
 <br>
 
-1. 🐾 **Install Required Dependencies:**
+3. 🐾 **Install Required Dependencies:**
 
 - With the virtual environment activated, install the required Python libraries for the 🟠**Lambda function**:
 
@@ -469,6 +480,8 @@ This isolates dependencies required for this project from your **global Python e
 
 </details>
 
+📌 e.g., <mark>**On 🔵CloudShell**</mark> (AWS managed network)
+
 - Upload self-certificate to 🔴**ACM**
 
 > 💡 **Note:**
@@ -537,21 +550,20 @@ This isolates dependencies required for this project from your **global Python e
 
 ### 2️⃣ Deploy 🟣VPC
 
-<br>
-
 ---
 
 <br>
 
-#### ✰ (Optional) Create Secure 🟢S3 Bucket for SAM Artifacts
+#### ✰ 🐾 A. Create Secure 🟢S3 Bucket for 🟠SAM Artifacts
 
 <br>
 
 > 🙄Why create a custom 🟢**S3 Bucket** for 🟠**AWS SAM**?
 
-By default, 🟠**AWS SAM** creates an 🟢**S3 Bucket** with a predictable name, like **aws-sam-cli-managed-default-samclisourcebucket**-xxxxxxxx.  
+By default, 🟠**AWS SAM** creates an 🟢**S3 Bucket** with a <u>predictable name</u>, like **aws-sam-cli-managed-default-samclisourcebucket**-xxxxxxxx.  
+
 While convenient, this introduces potential risks:  
-1. **Predictable Naming**: Attackers **could guess the bucket name** and target it with API requests.🫠
+1. **Predictable Naming**: Attackers🤖 **could guess the bucket name** and target it with API requests.🫠
 2. **Cost Risks**: Even failed requests incur AWS charges.💸
 3. **Security Gaps**: The default bucket may not have strict policies, increasing the attack surface.
 
@@ -564,9 +576,11 @@ While convenient, this introduces potential risks:
   - **`openssl rand -base64 20 | sed -re 's/(.....)/&-/g' -e 's/[/,+,=]/A/g' | awk '{print tolower($0)}'`**
   - **`uuidgen | tr '[:upper:]' '[:lower:]'`**
 
+---
+
 <br>
 
-1. 🐾 **Create new 🟢S3 Bucket:**
+##### ✦ 🐾 **Create new 🟢S3 Bucket:**
 
 - 📌 e.g., <mark>**On 🔵CloudShell**</mark> (AWS managed network)
 
@@ -588,41 +602,23 @@ While convenient, this introduces potential risks:
 
 <br>
 
-2. 🐾 **Apply a 📄Secure Bucket Policy**
-
-<br>
+##### ✦ 🐾 **Apply a 📄Secure Bucket Policy**
 
 - **Explanation**
-  - 🚫 1. `“Sid”: “DenyPublicAccess”`
+  - ✅ 1. `“Sid”: “AllowSAMAccess”`
+    - This allows **AWS SAM (CloudFormation)** to access the bucket during deployments
+  - ✅ 2. `“Sid”: AllowAccountOwnerToAvoidLockout`
+    - This allows the **AWS account owner (root user)** to access the bucket. [⚠️ **Lockout of S3 Bucket** <i class="fa fa-external-link-square-alt"></i>](https://repost.aws/articles/ARZE8eiGwITGKoAOJmHMm-kg/s3-bucket-lockout-recovery-using-iam-root-sessions)
+  - 🚫 3. `“Sid”: “DenyPublicAccess”`
     - This is an <mark>**explicit deny**</mark>, which takes precedence over any other “allow” policy.
     - Although AWS now blocks public access **by default**, this policy ensures that **even if someone changes the bucket settings**, public access is still denied. 
     - Condition → Enforces **TLS (https)** for secure data transfer.
-  - ✅ 2. `“Sid”: “AllowSAMAccess”`
-    - This allows **AWS SAM (CloudFormation)** to access the bucket during deployments
-  - ✅ 3. `“Sid”: AllowAccountOwnerToAvoidLockout`
-    - This allows the **AWS account owner (root user)** to access the bucket. [⚠️ **Lockout of S3 Bucket** <i class="fa fa-external-link-square-alt"></i>](https://repost.aws/articles/ARZE8eiGwITGKoAOJmHMm-kg/s3-bucket-lockout-recovery-using-iam-root-sessions)
-
 <br>
 
   ```json {hl_lines=["10-11",17,"27-29"]}
   {
     "Version": "2012-10-17",
     "Statement": [
-      {
-        "Sid": "ExplicitDenyPublicAccess",
-        "Principal": "*",
-        "Effect": "Deny",
-        "Action": "*",
-        "Resource": [
-          "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}",
-          "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}/*"
-        ],
-        "Condition": {
-          "Bool": {
-            "aws:SecureTransport": "false"
-          }
-        }
-      },
       {
         "Sid": "AllowSAMAccess",
         "Effect": "Allow",
@@ -658,6 +654,21 @@ While convenient, this introduces potential risks:
           "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}",
           "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}/*"
         ]
+      },
+      {
+        "Sid": "ExplicitDenyPublicAccess",
+        "Principal": "*",
+        "Effect": "Deny",
+        "Action": "*",
+        "Resource": [
+          "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}",
+          "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}/*"
+        ],
+        "Condition": {
+          "Bool": {
+            "aws:SecureTransport": "false"
+          }
+        }
       }
     ]
   }
@@ -666,7 +677,7 @@ While convenient, this introduces potential risks:
 <br>
 
 - Create a bucket-policy.json file:
-- Put it to the 🟢**S3 Bucket** for 🟠**AWS SAM**
+  - Put it to the 🟢**S3 Bucket** for 🟠**AWS SAM**
 
 ```bash-session
 ### Replace placeholders with real values
@@ -682,7 +693,7 @@ While convenient, this introduces potential risks:
 
 <br>
 
-1. 🐾 **Verify creation:**
+##### ✦ 🐾 **Verify creation:**
 
 - (Optional) Check the result:
 
@@ -744,7 +755,162 @@ While convenient, this introduces potential risks:
 
 <br>
 
-#### ✰ Basic VPC Setup
+#### ✰ 🐾 B. 🔴SSM Parameter Store settings
+
+<br>
+
+This template stores critical infrastructure parameters in **AWS Systems Manager** (🔴**SSM**) - **Parameter Store**, allowing easy access for other components for avoiding hardcoded values.
+
+<br>
+
+- 📌 Required Parameters in yaml:
+  - `ACMCertificateArn` : **<i>arn:aws:acm:us-west-2:<ACCOUNT-ID>:certificate/xxxx</i>**
+  - `VPCName`: TS-VPC
+  - `VPCID` : **<i>vpc-xxxx</i>**
+  - `PrivateSubnet1` : **<i>subnet-xxxa</i>**
+  - `PrivateSubnet2` : **<i>subnet-xxxb</i>**
+  - `PublicSubnet1` : **<i>subnet-xxxc</i>**
+  - `PublicSubnet2` : **<i>subnet-xxxd</i>**
+  - `AvailabilityZones`: us-west-2a,us-west-2b,us-west-2c,us-west-2d
+  - `NatGatewayID` : **Unknown** (Update later)
+  - `ALBSecurityGroupName` : **Unknown** (Update later)
+  - `ALBTargetGroupARN` : **Unknown** (Update later)
+  - `ALBName` : TS-ALB
+  - `ALBS3BucketName` : **Unknown** (Update later)
+  - `ALBPrefix` : alb-access-logs
+  - `ECSClusterName` : TS-ECS-Cluster
+  - `ECSServiceName` : TS-ECS-Service
+  - `ECSTaskDefinitionName`: TS-11
+  - `ECSContainerName`: TTPD-nginx
+  - `ECSContainerImageName`: **Unknown** (Update later)
+  - `ECRRepoName`: debut
+  - `StageName`: Test
+  - [💡Tips: **General purpose 🟢S3 Bucket naming rules**](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html#create-bucket-name-guid) 
+      - Useful commands for generate globally unique identifiers
+      - **`openssl rand -base64 20 | sed -re 's/(.....)/&-/g' -e 's/[/,+,=]/A/g' | awk '{print tolower($0)}'`**
+      - **`uuidgen | tr '[:upper:]' '[:lower:]'`**
+
+<br>
+
+- `--config-env` (Environment name): <i>SSM-PS</i>
+
+> 💡 **Note:**
+> Oh, you've lost previous outputs?🥲  
+>```bash-session
+># aws acm list-certificates --includes 'keyTypes=[EC_prime256v1]'
+>```
+
+```bash-session
+### 🚨Define variables (replace with your values)
+# export STACK_NAME=SSM-PS ; export ACM_CRT_ARN=xxx
+
+### The first time
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --confirm-changeset --save-params \
+ --stack-name ${STACK_NAME:-NULL} --config-env ${STACK_NAME} --s3-prefix ${STACK_NAME} -t ${STACK_NAME/-/_}.yaml \
+ --parameter-overrides ParameterKey=ACMCertificateArn,ParameterValue=${ACM_CRT_ARN:-NULL}
+
+
+  ### After the second
+  # export STACK_NAME=SSM-PS ; export ACM_CRT_ARN=xxx
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env ${STACK_NAME:-NULL}
+```
+
+```bash-session
+Previewing CloudFormation changeset before deployment
+======================================================
+Deploy this changeset? [y/N]: y
+```
+
+<details>
+
+<summary>📖An example of output</summary>
+
+>```console
+>Saved parameters to config file 'samconfig.toml' under environment 'SSM-PS': {'template_file':                                                 
+>'/home/cloudshell-user/Workshop/aws-serverless-education/Serverless_Architecture/FargateCluster/SSM.yaml', 's3_bucket':                        
+>'sam-artifacts-fm7rp-oloif-egci9-exami-sirqh-roa-thgir-syawla-tfiws-rolyat', 'capabilities': ('CAPABILITY_IAM',), 'confirm_changeset': True, 'stack_name':     
+>'SSM-PS', 's3_prefix': 'SSM-PS', 'parameter_overrides': {'ACMCertificateArn':                                                                  
+>'arn:aws:acm:us-west-2:041920240204:certificate/ctfiws-3337-4cbf-bedf-rolyatd1a877', 'VPCID': 'vpc-04eb144fbc892a756', 'PublicSubnet1':      
+>'subnet-0bd101d568021aa90', 'PublicSubnet2': 'subnet-0d810cc3927a7c34f', 'PrivateSubnet1': 'subnet-0d7f2ab2debcfaec5', 'PrivateSubnet2':            
+>'subnet-041e2332ed5212e8d'}}                                                                                                                        
+>
+>        Deploying with following values
+>        ===============================
+>        Stack name                   : SSM-PS
+>        Region                       : us-west-2
+>        Confirm changeset            : True
+>        Disable rollback             : False
+>        Deployment s3 bucket         : sam-artifacts-fm7rp-oloif-egci9-exami-sirqh-roa-thgir-syawla-tfiws-rolyat
+>        Capabilities                 : null
+>        Parameter overrides          : {"ACMCertificateArn": "arn:aws:acm:us-west-2:041920240204:certificate/ctfiws-3337-4cbf-bedf-rolyatd1a877"}
+>        Signing Profiles             : {}
+>:
+>Successfully created/updated stack - SSM-PS in us-west-2
+>```
+
+</details>
+
+<br>
+
+- (Optional) Check the result:
+
+```bash-session
+# PATH_NAME=/FargateCluster
+
+### Only name
+# pwsh -C "(aws ssm get-parameters-by-path --path ${PATH_NAME} --recursive --with-decryption | ConvertFrom-Json).Parameters | ft Name"
+
+### Details
+# pwsh -C "(aws ssm get-parameters-by-path --path ${PATH_NAME} --recursive --with-decryption | ConvertFrom-Json).Parameters"
+```
+
+<details>
+
+<summary>📖An example of output</summary>
+
+>```ps1
+>Name                                  
+>----                                  
+>/FargateCluster/ACMCertificateArn     
+>/FargateCluster/ALB/ALBName           
+>/FargateCluster/ALB/ALBPrefix         
+>/FargateCluster/ALB/S3BucketName      
+>/FargateCluster/ALB/SecurityGroupName 
+>/FargateCluster/ALB/TargetGroupARN    
+>/FargateCluster/ECR/RepoName          
+>/FargateCluster/ECS/ServiceName       
+>/FargateCluster/ECS/TaskDefinitionName
+>/FargateCluster/StageName             
+>/FargateCluster/ECS/ClusterName       
+>/FargateCluster/ECS/ContainerImageName
+>/FargateCluster/ECS/ContainerName     
+>/FargateCluster/VPC/AvailabilityZones 
+>/FargateCluster/VPC/NatGatewayID      
+>/FargateCluster/VPC/PrivateSubnet1    
+>/FargateCluster/VPC/PrivateSubnet2    
+>/FargateCluster/VPC/PublicSubnet1     
+>/FargateCluster/VPC/PublicSubnet2     
+>/FargateCluster/VPC/VPCName           
+>
+>
+>Name             : /FargateCluster/ACMCertificateArn
+>ARN              : arn:arn:aws:acm:us-west-2:041920240204:certificate/ctfiws-3337-4cbf-bedf-rolyatd1a877
+>Type             : String
+>LastModifiedDate : 2/24/2025 5:11:57 AM
+>Description      : SSL/TLS certificate ARN for ALB.
+>Version          : 1
+>Tier             : Standard
+>Policies         : {}
+>DataType         : text
+>```
+
+</details>
+
+---
+
+<br>
+
+#### ✰ 🐾 C. Basic 🟣VPC Setup
 
 <br>
 
@@ -780,21 +946,32 @@ This template creates a **basic 🟣VPC** with:
 
 </details>
 
+---
+
 <br>
 
-- 📌 Required Parameters:
-  - **`AvailabilityZones`**: <i>us-west-2a,us-west-2b,us-west-2c, us-west-2d</i> (Oregon) *You can adjust this however you like.
-  - **`VPCName`**: <i>TS-VPC</i>
+##### ✦ 🐾 **Create 🟣Networking:**
 
 - `--config-env` (Environment name): <i>Basic-VPC</i>
 
+> 💡 **Note:**
+> Oh, you've lost previous outputs?🥲  
+>```bash-session
+># sam list stack-outputs --stack-name Basic-VPC
+>```
+
 ```bash-session
+### 🚨Define variables
+# export STACK_NAME=Basic-VPC
+
 ### The first time
 # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --confirm-changeset --save-params \
- --stack-name Basic-VPC --config-env Basic-VPC --s3-prefix Basic-VPC -t VPC.yaml
+ --stack-name ${STACK_NAME:-NULL} --config-env ${STACK_NAME} --s3-prefix ${STACK_NAME} -t ${STACK_NAME/-/_}.yaml
+
 
   ### After the second
-  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env Basic-VPC
+  # export STACK_NAME=Basic-VPC
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env ${STACK_NAME:-NULL}
 ```
 
 ```bash-session
@@ -829,6 +1006,10 @@ Deploy this changeset? [y/N]: y
 >:
 >Outputs                                                                                                                                    
 >--------------------------------------------------------------------------------------------------------------------------------------------
+>Key                 InternetGatewayID                                                                                                     
+>Description         The ID of the Internet Gateway                                                                                        
+>Value               igw-04ca4950fc38b30fc 
+>
 >Key                 PrivateSubnetID2                                                                                                       
 >Description         The ID of the private subnet2                                                                                          
 >Value               subnet-041e2332ed5212e8d                                                                                               
@@ -864,149 +1045,70 @@ Deploy this changeset? [y/N]: y
 
 </details>
 
----
-
 <br>
 
-##### ✦ 🔴SSM ParameterStore settings
+##### ✦ 🐾 **Update the values of 🔴SSM Parameter Store:**
 
-<br>
-
-This template stores critical infrastructure parameters in **AWS Systems Manager** (🔴**SSM**) - **Parameter Store**, allowing easy access for other components for avoiding hardcoded values.
-
-<br>
-
-- 📌 Required Parameters:
-  - `ACMCertificateArn` : <i>arn:aws:acm:us-west-2:<ACCOUNT-ID>:certificate/xxxx</i>
-  - `VPCID` : <i>vpc-xxxx</i> 
-  - `PrivateSubnet1` : <i>subnet-xxxa</i>
-  - `PrivateSubnet2` : <i>subnet-xxxb</i>
-  - `PublicSubnet1` : <i>subnet-xxxc</i>
-  - `PublicSubnet2` : <i>subnet-xxxd</i>
-  - `NatGatewayID` : **Unknown** (Update later)
-  - `ALBSecurityGroupName` : **Unknown** (Update later)
-  - `ALBTargetGroupARN` : **Unknown** (Update later)
-  - `ALBName` : <i>TS-ALB</i>
-  - `ALBS3BucketName` : <i>alb-logs-2v9dr-u4aod-vxq6f-a5ow3-thgir-syawla-tfiws-rolyat</i> (Update later)
-  - `ALBPrefix` : <i>alb-access-logs</i>
-  - `ECSClusterName` : <i>TS-ECS-Cluster</i>
-  - `ECSServiceName` : <i>TS-ECS-Service</i>
-  - `ECSTaskDefinitionName`: <i>TS-11</i>
-  - `ECSContainerName`: <i>TTPD-nginx</i>
-  - [💡Tips: **General purpose 🟢S3 Bucket naming rules**](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html#create-bucket-name-guid) 
-      - Useful commands for generate globally unique identifiers
-      - **`openssl rand -base64 20 | sed -re 's/(.....)/&-/g' -e 's/[/,+,=]/A/g' | awk '{print tolower($0)}'`**
-      - **`uuidgen | tr '[:upper:]' '[:lower:]'`**
-
-<br>
-
-> 💡 **Note:**
-> Oh, you've lost previous outputs?🥲  
->```bash-session
-># aws acm list-certificates --includes 'keyTypes=[EC_prime256v1]'
-># sam list stack-outputs --stack-name Basic-VPC
->```
-
-- `--config-env` (Environment name): <i>SSM-PS</i>
+- Update the values of the following parameters
+  - `/FargateCluster/VPC/VPCID`
+  - `/FargateCluster/VPC/PublicSubnet1`
+  - `/FargateCluster/VPC/PublicSubnet2`
+  - `/FargateCluster/VPC/PrivateSubnet1`
+  - `/FargateCluster/VPC/PrivateSubnet2`
 
 ```bash-session
-### The first time
-# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --confirm-changeset --save-params \
- --stack-name SSM-PS --config-env SSM-PS --s3-prefix SSM-PS -t SSM.yaml \
- --parameter-overrides ParameterKey=ACMCertificateArn,ParameterValue= \
- ParameterKey=VPCID,ParameterValue= \
- ParameterKey=PublicSubnet1,ParameterValue= \
- ParameterKey=PublicSubnet2,ParameterValue= \
- ParameterKey=PrivateSubnet1,ParameterValue= \
- ParameterKey=PrivateSubnet2,ParameterValue=
+### 🚨Define variables
+# PRAM_NAME=/FargateCluster/VPC/VPCID VALUE=vpc-04eb144fbc892a756
 
-  ### After the second
-  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env SSM-PS
+# aws ssm put-parameter --name ${PRAM_NAME:-NULL} --value ${VALUE:-NULL} --type "String" --overwrite
 ```
-
-```bash-session
-Previewing CloudFormation changeset before deployment
-======================================================
-Deploy this changeset? [y/N]: y
-```
-
-<details>
-
-<summary>📖An example of output</summary>
-
->```console
->Saved parameters to config file 'samconfig.toml' under environment 'SSM-PS': {'template_file':                                                 
->'/home/cloudshell-user/Workshop/aws-serverless-education/Serverless_Architecture/FargateCluster/SSM.yaml', 's3_bucket':                        
->'sam-artifacts-fm7rp-oloif-egci9-exami-sirqh-roa-thgir-syawla-tfiws-rolyat', 'capabilities': ('CAPABILITY_IAM',), 'confirm_changeset': True, 'stack_name':     
->'SSM-PS', 's3_prefix': 'SSM-PS', 'parameter_overrides': {'ACMCertificateArn':                                                                  
->'arn:aws:acm:us-west-2:041920240204:certificate/ctfiws-3337-4cbf-bedf-rolyatd1a877', 'VPCID': 'vpc-04eb144fbc892a756', 'PublicSubnet1':      
->'subnet-0bd101d568021aa90', 'PublicSubnet2': 'subnet-0d810cc3927a7c34f', 'PrivateSubnet1': 'subnet-0d7f2ab2debcfaec5', 'PrivateSubnet2':            
->'subnet-041e2332ed5212e8d'}}                                                                                                                        
->
->        Deploying with following values
->        ===============================
->        Stack name                   : SSM-PS
->        Region                       : us-west-2
->        Confirm changeset            : True
->        Disable rollback             : False
->        Deployment s3 bucket         : sam-artifacts-fm7rp-oloif-egci9-exami-sirqh-roa-thgir-syawla-tfiws-rolyat
->        Capabilities                 : null
->        Parameter overrides          : {"ACMCertificateArn": "arn:arn:aws:acm:us-west-2:041920240204:certificate/ctfiws-3337-4cbf-bedf-rolyatd1a877", "VPCID": "vpc-06dd7ceaf6fd899a6", "PublicSubnet1": "subnet-0bd101d568021aa90", "PublicSubnet2": "subnet-0d810cc3927a7c34f", "PrivateSubnet1": "subnet-0d7f2ab2debcfaec5", "PrivateSubnet2": "subnet-041e2332ed5212e8d"}
->        Signing Profiles             : {}
->:
->Successfully created/updated stack - SSM-PS in us-west-2
->```
-
-</details>
 
 <br>
 
-- (Optional) Check the result:
+##### ✦ 🐾 **Verify creation:**
+
+- Check the result:
 
 ```bash-session
-# pwsh -C 'aws ssm describe-parameters | convertFrom-json | select-object -expandProperty Parameters | Select-Object Name'
+# pwsh
 
-### More details
-# pwsh -C 'aws ssm describe-parameters | convertFrom-json | select-object -expandProperty Parameters'
+PS1> $parameterNames = (aws ssm get-parameters-by-path --path /FargateCluster/VPC --recursive --with-decryption | ConvertFrom-Json).Parameters | Select-Object -ExpandProperty Name
+
+PS1> $batchSize = 10
+for ($i = 0; $i -lt $parameterNames.Count; $i += $batchSize) {
+    $batch = $parameterNames[$i..($i + $batchSize - 1)]
+    Write-Host "`nFetching parameters: $($batch -join ', ')"
+    
+    # Fetch parameter values for each batch
+    if ($batch.Count -gt 0) {
+        $parameterValues = aws ssm get-parameters --names $batch --with-decryption | ConvertFrom-Json
+        $parameterValues.Parameters | Select-Object Name, Value
+    }
+}
+
+PS1> Ctrl+D
 ```
 
->```ps1
->Name
->----
->/FargateCluster/ACMCertificateArn
->/FargateCluster/ALB/ALBName
->/FargateCluster/ALB/ALBPrefix
->/FargateCluster/ALB/S3BucketName
->/FargateCluster/ALB/SecurityGroupName
->/FargateCluster/ALB/TargetGroupARN
->/FargateCluster/ECS/ClusterName
->/FargateCluster/ECS/ContainerName
->/FargateCluster/ECS/ServiceName
->/FargateCluster/ECS/TaskDefinitionName
->/FargateCluster/VPC/NatGatewayID
->/FargateCluster/VPC/PrivateSubnet1
->/FargateCluster/VPC/PrivateSubnet2
->/FargateCluster/VPC/PublicSubnet1
->/FargateCluster/VPC/PublicSubnet2
->/FargateCluster/VPC/VPCID
+>```ps1 {hl_lines=["7-11"]}
+>Fetching parameters: /FargateCluster/VPC/AvailabilityZones, /FargateCluster/VPC/NatGatewayID, /FargateCluster/VPC/PrivateSubnet1, /FargateCluster/VPC/PrivateSubnet2, /FargateCluster/VPC/PublicSubnet1, /FargateCluster/VPC/PublicSubnet2, /FargateCluster/VPC/VPCID, /FargateCluster/VPC/VPCName
 >
->
->Name             : /FargateCluster/ACMCertificateArn
->ARN              : arn:arn:aws:acm:us-west-2:041920240204:certificate/ctfiws-3337-4cbf-bedf-rolyatd1a877
->Type             : String
->LastModifiedDate : 2/24/2025 5:11:57 AM
->Description      : SSL/TLS certificate ARN for ALB.
->Version          : 1
->Tier             : Standard
->Policies         : {}
->DataType         : text
+>Name                                  Value
+>----                                  -----
+>/FargateCluster/VPC/AvailabilityZones us-west-2a,us-west-2b,us-west-2c,us-west-2d
+>/FargateCluster/VPC/NatGatewayID      Unknown-NatGtwyID-300-takeout-coffees-later
+>/FargateCluster/VPC/PrivateSubnet1    subnet-0d7f2ab2debcfaec5
+>/FargateCluster/VPC/PrivateSubnet2    subnet-041e2332ed5212e8d
+>/FargateCluster/VPC/PublicSubnet1     subnet-0bd101d568021aa90
+>/FargateCluster/VPC/PublicSubnet2     subnet-060c837df9ac244cb
+>/FargateCluster/VPC/VPCID             vpc-04eb144fbc892a756
+>/FargateCluster/VPC/VPCName           TS-VPC
 >```
 
 ---
 
 <br>
 
-#### ✰ 🟣VPC-Extras💰
+#### ✰ 🐾 D. 🟣VPC-Extras💰
 
 <br>
 
@@ -1067,20 +1169,17 @@ This template adds a 🟣**NAT Gateway**, `security groups`, and optional 🟣**
 - `--config-env` (Environment name): <i>VPC-Extras-Gen2Endpoint</i> / <i>VPC-Extras-Flowlogs</i>
 
 ```bash-session
+### 🚨Define variables
+# export STACK_NAME=VPC-Extras-Gen2Endpoint
+
 ### The first time
 # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --confirm-changeset --save-params \
- --stack-name VPC-Extras-Gen2Endpoint --config-env VPC-Extras-Gen2Endpoint --s3-prefix VPC-Extras-Gen2Endpoint -t VPC_Extras_Gen2Endpoint.yaml
+ --stack-name ${STACK_NAME:-NULL} --config-env ${STACK_NAME} --s3-prefix ${STACK_NAME} -t ${STACK_NAME/-/_}.yaml
+
 
   ### After the second
-  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env VPC-Extras-Gen2Endpoint
-
-
-### The first time
-# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --capabilities CAPABILITY_IAM --confirm-changeset --save-params \
- --stack-name VPC-Extras-Flowlogs --config-env VPC-Extras-Flowlogs --s3-prefix VPC-Extras-Flowlogs -t VPC_Extras_Flowlogs.yaml
-
-  ### After the second
-  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env VPC-Extras-Flowlogs
+  # export STACK_NAME=VPC-Extras-Gen2Endpoint
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env ${STACK_NAME:-NULL}
 ```
 
 ```bash-session
@@ -1114,6 +1213,28 @@ Deploy this changeset? [y/N]: y
 >```
 
 </details>
+
+<br>
+
+```bash-session
+### 🚨Define variables
+# export STACK_NAME=VPC-Extras-Flowlogs
+
+### The first time
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --capabilities CAPABILITY_IAM --confirm-changeset --save-params \
+ --stack-name ${STACK_NAME:-NULL} --config-env ${STACK_NAME} --s3-prefix ${STACK_NAME} -t ${STACK_NAME/-/_}.yaml
+
+
+  ### After the second
+  # export STACK_NAME=VPC-Extras-Flowlogs
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env ${STACK_NAME:-NULL}
+```
+
+```bash-session
+Previewing CloudFormation changeset before deployment
+======================================================
+Deploy this changeset? [y/N]: y
+```
 
 ---
 
@@ -1149,12 +1270,17 @@ This step sets up ALB logs forwarding to CloudWatch Logs
 - `--config-env` (Environment name): <i>ALB-LogsForwarder</i>
 
 ```bash-session
+### 🚨Define variables
+# export STACK_NAME=ALB-LogsForwarder
+
 ### The first time
 # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --capabilities CAPABILITY_IAM --confirm-changeset --save-params \
- --stack-name ALB-LogsForwarder --config-env ALB-LogsForwarder --s3-prefix ALB-LogsForwarder -t ALB_Logs_Forwarder.yaml
+ --stack-name ${STACK_NAME:-NULL} --config-env ${STACK_NAME} --s3-prefix ${STACK_NAME} -t ${STACK_NAME/-/_}.yaml
+
 
   ### After the second
-  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env ALB-LogsForwarder
+  # export STACK_NAME=ALB-LogsForwarder
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env ${STACK_NAME:-NULL}
 ```
 
 ```bash-session
@@ -1199,12 +1325,17 @@ Deploy this changeset? [y/N]: y
 - `--config-env` (Environment name): <i>ALB-Internal</i>
 
 ```bash-session
+### 🚨Define variables
+# export STACK_NAME=ALB-Internal
+
 ### The first time
 # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --capabilities CAPABILITY_IAM --confirm-changeset --save-params \
- --stack-name ALB-Internal --config-env ALB-Internal --s3-prefix ALB-Internal -t ALB_Internal.yaml
+ --stack-name ${STACK_NAME:-NULL} --config-env ${STACK_NAME} --s3-prefix ${STACK_NAME} -t ${STACK_NAME/-/_}.yaml
+
 
   ### After the second
-  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env ALB-Internal
+  # export STACK_NAME=ALB-Internal
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env ${STACK_NAME:-NULL}
 ```
 
 ```bash-session
@@ -1243,6 +1374,12 @@ Deploy this changeset? [y/N]: y
 
 </details>
 
+<br>
+
+#### ✰ 🐾 A. **Create new 🟠ECR Private Repo:**
+
+<br>
+
 📌 <mark>**On 🔵CloudShell in `Private` Subnet**</mark>
 
 |🙄How to create CloudShell within Private Subnet?||
@@ -1253,12 +1390,14 @@ Deploy this changeset? [y/N]: y
 
 ```bash-session
 ### Define variables
-# REPO_NAME=debut ; ACCOUNT_ID=`aws sts get-caller-identity | jq -r .Account`
+# PRAM_NAME=/FargateCluster/ECR/RepoName
+# REPO_NAME=`aws ssm get-parameter --name ${PRAM_NAME:-NULL} | jq -r '.Parameter.Value`
+# ACCOUNT_ID=`aws sts get-caller-identity | jq -r .Account`
 
 ### Create ECR Private Repo for Your Custom Images
 # aws ecr create-repository --repository-name ${REPO_NAME:-NULL}
 
-### Pull Nginx from AWS Public ECR (Preferred)
+### Pull Nginx from AWS Public ECR
 # docker pull --platform=linux/arm64 public.ecr.aws/nginx/nginx:latest
 
   ### (Option) Check if the image architecture and is available
@@ -1288,39 +1427,59 @@ Deploy this changeset? [y/N]: y
 <br>
 
 ```bash-session
+### Define variables
+# IMAGE_NAME=${ACCOUNT_ID}.dkr.ecr.us-west-2.amazonaws.com/${REPO_NAME}:track5
+# PRAM_NAME=/FargateCluster/ECS/ContainerImageName VALUE=${IMAGE_NAME}
+
 ### Login to ECR
 # aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.us-west-2.amazonaws.com
 
 ### Tag the Image for AWS ECR
-# docker tag public.ecr.aws/nginx/nginx:latest ${ACCOUNT_ID}.dkr.ecr.us-west-2.amazonaws.com/${REPO_NAME}:latest
+# docker tag public.ecr.aws/nginx/nginx:latest ${IMAGE_NAME:-NULL}
 
 ### Push Image to AWS ECR
-# docker push ${ACCOUNT_ID:-NULL}.dkr.ecr.us-west-2.amazonaws.com/${REPO_NAME:-NULL}:latest
+# docker push ${IMAGE_NAME:-NULL}
+
+### Update SSM Parameter
+# aws ssm put-parameter --name ${PRAM_NAME:-NULL} --value ${VALUE:-NULL} --type "String" --overwrite
+
 
   ### Option: if you want to update current ECS Cluster, then
-  # aws ecs update-service --cluster TSCluster --service ECSService --force-new-deployment
+  # PRAM_NAME=/FargateCluster/ECS/ClusterName
+  # ECSClusterName=`aws ssm get-parameter --name ${PRAM_NAME:-NULL} | jq -r '.Parameter.Value`
+  # PRAM_NAME=/FargateCluster/ECS/ServiceName
+  # ECSServiceName=`aws ssm get-parameter --name ${PRAM_NAME:-NULL} | jq -r '.Parameter.Value`
+  # aws ecs update-service --cluster ${ECSClusterName:-NULL} --service ${ECSServiceName:-NULL} --force-new-deployment
 
 ### Logout from AWS ECR
 # docker logout ${ACCOUNT_ID}.dkr.ecr.us-west-2.amazonaws.com
 ```
 
-  ---
+---
+
+<br>
+
+#### ✰ 🐾 B. **Deploy 🟠Fargate Cluster:**
+
+<br>
 
 >⚠️ Cost Warning: [^3]  
 >The 🟠**Fargate** is a paid service and incurs hourly and vCPU and storage based charges.
 
-<br>
-
-- 📌Deploy Fargate Cluster
-  - `--config-env` (Environment name): <i>FargateCluster</i>
+- `--config-env` (Environment name): <i>FargateCluster</i>
 
 ```bash-session
+### 🚨Define variables
+# export STACK_NAME=FargateCluster
+
 ### The first time
 # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --capabilities CAPABILITY_IAM --confirm-changeset --save-params \
- --stack-name FargateCluster --config-env FargateCluster --s3-prefix FargateCluster -t FargateCluster.yaml
+ --stack-name ${STACK_NAME:-NULL} --config-env ${STACK_NAME} --s3-prefix ${STACK_NAME} -t ${STACK_NAME}.yaml
+
 
   ### After the second
-  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env FargateCluster
+  # export STACK_NAME=FargateCluster
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env ${STACK_NAME:-NULL} 
 ```
 
 ```bash-session
@@ -1358,12 +1517,17 @@ Deploy this changeset? [y/N]: y
 - `--config-env` (Environment name): <i>ECS-AppAutoScaling</i>
 
 ```bash-session
+### 🚨Define variables
+# export STACK_NAME=ECS-AppAutoScaling
+
 ### The first time
 # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --capabilities CAPABILITY_IAM --confirm-changeset --save-params \
- --stack-name ECS-AppAutoScaling --config-env ECS-AppAutoScaling --s3-prefix ECS-AppAutoScaling -t AppAutoScaling.yaml
+ --stack-name ${STACK_NAME:-NULL} --config-env ${STACK_NAME} --s3-prefix ${STACK_NAME} -t ${STACK_NAME##*-}.yaml
+
 
   ### After the second
-  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env ECS-AppAutoScaling
+  # export STACK_NAME=ECS-AppAutoScaling
+  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env ${STACK_NAME:-NULL}
 ```
 
 ```bash-session

@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: This acts as a controller to deploy subcomponents in order (Must put --capabilities CAPABILITY_AUTO_EXPAND option.)
+
+Resources:
+  BasicVPC:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./Basic_VPC.yaml
+
+  SSMParameterStore:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./SSM_PS.yaml
+      Parameters:
+        VPCID: !GetAtt BasicVPC.Outputs.VPCID
+        PublicSubnet1: !GetAtt BasicVPC.Outputs.PublicSubnetID1
+        PublicSubnet2: !GetAtt BasicVPC.Outputs.PublicSubnetID2
+        PrivateSubnet1: !GetAtt BasicVPC.Outputs.PrivateSubnetID1
+        PrivateSubnet2: !GetAtt BasicVPC.Outputs.PrivateSubnetID2
+        ACMCertificateArn: "Replacement"

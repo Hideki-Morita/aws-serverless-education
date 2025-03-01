@@ -1,21 +1,22 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Part-1 - A basic VPC network setup for testing purposes, including subnets, route tables, and gateways.
+Description: Part-2 - A basic VPC network setup for testing purposes, including subnets, route tables, and gateways.
 
 Parameters:
   ### Dynamic AZ Selection with Parameterized List:
   ###   You must check available AZs with `aws ec2 describe-availability-zones --all-availability-zones`
-  ###   Resolves Common Errors:
-  ###   Prevents Fn::Select cannot select nonexistent value errors by explicitly defining valid AZs.
-  ###   Addresses Fn::GetAZs limitations where invalid or unavailable zones might be included in the list.
-  AvailabilityZones:
-    Type: CommaDelimitedList
-    Default: us-west-2a,us-west-2b,us-west-2c, us-west-2d
-    Description: List of usable Availability Zones
   VPCName:
-    Type: String
-    Default: TS-VPC
-    Description: The Name of the VPC
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /FargateCluster/VPC/VPCName
+    Description: "The VPC's logical name"
+  AvailabilityZones:
+    Type: AWS::SSM::Parameter::Value<CommaDelimitedList>
+    Default: /FargateCluster/VPC/AvailabilityZones
+    Description: "List of usable Availability Zones"
+  Stage:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /FargateCluster/StageName
+    Description: "The Name of the environment"
 
 Resources:
   ### VPC and Networking Components ###
@@ -23,27 +24,28 @@ Resources:
   NewVPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 10.0.0.0/16 # Defines the private IP address range for the VPC
-      EnableDnsSupport: true # Enables DNS resolution within the VPC
+      CidrBlock: 10.0.0.0/16   # Defines the private IP address range for the VPC
+      EnableDnsSupport: true   # Enables DNS resolution within the VPC
       EnableDnsHostnames: true # Enables DNS hostnames for resources
       Tags:
         - Key: Name
           Value: !Ref VPCName
+        - Key: Environment
+          Value: !Ref Stage
         - Key: Where
-          Value: us-west-2
+          Value: !Ref "AWS::Region"
         - Key: For
           Value: Education
         - Key: System
           Value: FargateCluster
 
-  ### Public Subnets for ALB ###
+  ### Public Subnets for Nat-Gateway ###
   # Public subnets host the Application Load Balancer and allow direct access from the Internet.
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref NewVPC
       CidrBlock: 10.0.1.0/24 # IP range for the first public subnet
-      #AvailabilityZone: us-west-2a # Hardcoding the AZs does NOT work
       # Automatically select the first AZ
       AvailabilityZone: !Select
         - 0
@@ -53,9 +55,9 @@ Resources:
         - Key: Name
           Value: "Public-Subnet-01"
         - Key: Environment
-          Value: Test
+          Value: !Ref Stage
         - Key: Where
-          Value: us-west-2
+          Value: !Ref "AWS::Region"
         - Key: For
           Value: Education
         - Key: System
@@ -74,9 +76,9 @@ Resources:
         - Key: Name
           Value: "Public-Subnet-02"
         - Key: Environment
-          Value: Test
+          Value: !Ref Stage
         - Key: Where
-          Value: us-west-2
+          Value: !Ref "AWS::Region"
         - Key: For
           Value: Education
         - Key: System
@@ -103,9 +105,9 @@ Resources:
         - Key: Name
           Value: "Public-RouteTable-01"
         - Key: Environment
-          Value: Test
+          Value: !Ref Stage
         - Key: Where
-          Value: us-west-2
+          Value: !Ref "AWS::Region"
         - Key: For
           Value: Education
         - Key: System
@@ -119,9 +121,9 @@ Resources:
         - Key: Name
           Value: "Public-RouteTable-02"
         - Key: Environment
-          Value: Test
+          Value: !Ref Stage
         - Key: Where
-          Value: us-west-2
+          Value: !Ref "AWS::Region"
         - Key: For
           Value: Education
         - Key: System
@@ -153,7 +155,7 @@ Resources:
       SubnetId: !Ref PublicSubnet2
       RouteTableId: !Ref PublicRouteTable2
 
-  ### 🛠 Create a Custom Network ACL ###
+  ### Create a Custom Network ACL ###
   PublicNetworkAcl:
     Type: AWS::EC2::NetworkAcl
     Properties:
@@ -162,29 +164,29 @@ Resources:
         - Key: Name
           Value: Public-NACL
         - Key: Environment
-          Value: Test
+          Value: !Ref Stage
         - Key: Where
-          Value: us-west-2
+          Value: !Ref "AWS::Region"
         - Key: For
           Value: Education
         - Key: System
           Value: FargateCluster
 
-  ### 🛠 Associate NACL with Public Subnet 1 ###
+  ### Associate NACL with Public Subnet 1 ###
   PublicSubnet1NetworkAclAssociation:
     Type: AWS::EC2::SubnetNetworkAclAssociation
     Properties:
       SubnetId: !Ref PublicSubnet1
       NetworkAclId: !Ref PublicNetworkAcl
 
-  ### 🛠 Associate NACL with Public Subnet 2 ###
+  ### Associate NACL with Public Subnet 2 ###
   PublicSubnet2NetworkAclAssociation:
     Type: AWS::EC2::SubnetNetworkAclAssociation
     Properties:
       SubnetId: !Ref PublicSubnet2
       NetworkAclId: !Ref PublicNetworkAcl
 
-  ### 🔒 Inbound Rule: Allow HTTPS Traffic (ECR, CloudWatch) ###
+  ### Inbound Rule: Allow HTTPS Traffic (ECR, CloudWatch) ###
   PublicInboundAllowHTTPS:
     Type: AWS::EC2::NetworkAclEntry
     Properties:
@@ -198,7 +200,7 @@ Resources:
         From: 443
         To: 443
 
-  ### 🔒 Inbound Rule: Allow Ephemeral Ports for Responses ###
+  ### Inbound Rule: Allow Ephemeral Ports for Responses ###
   PublicInboundAllowEphemeral:
     Type: AWS::EC2::NetworkAclEntry
     Properties:
@@ -212,7 +214,7 @@ Resources:
         From: 1024
         To: 65535
 
-  ### 🚫 Inbound Rule: Deny All Other Traffic (Explicit) ###
+  ### Inbound Rule: Deny All Other Traffic (Explicit) ###
   PublicInboundDenyAll:
     Type: AWS::EC2::NetworkAclEntry
     Properties:
@@ -223,7 +225,7 @@ Resources:
       Egress: false
       CidrBlock: 0.0.0.0/0
 
-  ### 🔒 Outbound Rule: Allow HTTPS Traffic to AWS Services ###
+  ### Outbound Rule: Allow HTTPS Traffic to AWS Services ###
   PublicOutboundAllowALL:
     Type: AWS::EC2::NetworkAclEntry
     Properties:
@@ -248,9 +250,9 @@ Resources:
         - Key: Name
           Value: "Private-Subnet-01"
         - Key: Environment
-          Value: Test
+          Value: !Ref Stage
         - Key: Where
-          Value: us-west-2
+          Value: !Ref "AWS::Region"
         - Key: For
           Value: Education
         - Key: System
@@ -268,15 +270,15 @@ Resources:
         - Key: Name
           Value: "Private-Subnet-02"
         - Key: Environment
-          Value: Test
+          Value: !Ref Stage
         - Key: Where
-          Value: us-west-2
+          Value: !Ref "AWS::Region"
         - Key: For
           Value: Education
         - Key: System
           Value: FargateCluster
 
-  ### 🛠 Create a Custom Network ACL ###
+  ### Create a Custom Network ACL ###
   PrivateNetworkAcl:
     Type: AWS::EC2::NetworkAcl
     Properties:
@@ -285,29 +287,29 @@ Resources:
         - Key: Name
           Value: Private-NACL
         - Key: Environment
-          Value: Test
+          Value: !Ref Stage
         - Key: Where
-          Value: us-west-2
+          Value: !Ref "AWS::Region"
         - Key: For
           Value: Education
         - Key: System
           Value: FargateCluster
 
-  ### 🛠 Associate NACL with Private Subnet 1 ###
+  ### Associate NACL with Private Subnet 1 ###
   PrivateSubnet1NetworkAclAssociation:
     Type: AWS::EC2::SubnetNetworkAclAssociation
     Properties:
       SubnetId: !Ref PrivateSubnet1
       NetworkAclId: !Ref PrivateNetworkAcl
 
-  ### 🛠 Associate NACL with Private Subnet 2 ###
+  ### Associate NACL with Private Subnet 2 ###
   PrivateSubnet2NetworkAclAssociation:
     Type: AWS::EC2::SubnetNetworkAclAssociation
     Properties:
       SubnetId: !Ref PrivateSubnet2
       NetworkAclId: !Ref PrivateNetworkAcl
 
-  ### 🔒 Inbound Rule: Allow HTTPS Traffic (ECR, CloudWatch) ###
+  ### Inbound Rule: Allow HTTPS Traffic (ECR, CloudWatch) ###
   PrivateInboundAllowHTTPS:
     Type: AWS::EC2::NetworkAclEntry
     Properties:
@@ -321,8 +323,7 @@ Resources:
         From: 443
         To: 443
 
-  ### 🔒 Inbound Rule: Allow Ephemeral Ports for Responses ###
-  ### 🙃 Very very important: Allow ephemeral response ports (1024-65535) for TCP traffic via 🟣Nat-Gateway
+  ### Inbound Rule: Allow Ephemeral Ports for Responses ###
   PrivateInboundAllowEphemeral:
     Type: AWS::EC2::NetworkAclEntry
     Properties:
@@ -336,7 +337,7 @@ Resources:
         From: 1024
         To: 65535
 
-  ### 🚫 Inbound Rule: Deny All Other Traffic (Explicit) ###
+  ### Inbound Rule: Deny All Other Traffic (Explicit) ###
   PrivateInboundDenyAll:
     Type: AWS::EC2::NetworkAclEntry
     Properties:
@@ -347,7 +348,7 @@ Resources:
       Egress: false
       CidrBlock: 0.0.0.0/0
 
-  ### 🔒 Outbound Rule: Allow HTTPS Traffic to AWS Services ###
+  ### Outbound Rule: Allow HTTPS Traffic to AWS Services ###
   PrivateOutboundAllowHTTPS:
     Type: AWS::EC2::NetworkAclEntry
     Properties:
@@ -361,7 +362,7 @@ Resources:
         From: 443
         To: 443
 
-  ### 🔒 Outbound Rule: Allow Ephemeral Ports for Responses ###
+  ### Outbound Rule: Allow Ephemeral Ports for Responses ###
   PrivateOutboundAllowEphemeral:
     Type: AWS::EC2::NetworkAclEntry
     Properties:
@@ -375,7 +376,7 @@ Resources:
         From: 1024
         To: 65535
 
-  ### 🚫 Outbound Rule: Deny All Other Traffic (Explicit) ###
+  ### Outbound Rule: Deny All Other Traffic (Explicit) ###
   PrivateOutboundDenyAll:
     Type: AWS::EC2::NetworkAclEntry
     Properties:
