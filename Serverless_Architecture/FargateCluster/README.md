@@ -680,7 +680,7 @@ While convenient, this introduces potential risks:
   - Put it to the 🟢**S3 Bucket** for 🟠**AWS SAM**
 
 ```bash-session
-### Replace placeholders with real values
+### 🚨Define variables (replace with real values)
 # export ACCOUNT_ID=`\aws sts get-caller-identity --query Account --output text`
 # export ASSUMED_ROLE_ARN=`\aws sts get-caller-identity --query Arn --output text`
 # export ASSUMED_ROLE_NAME=`echo ${ASSUMED_ROLE_ARN} | cut -f 2 -d "/"`
@@ -954,12 +954,6 @@ This template creates a **basic 🟣VPC** with:
 
 - `--config-env` (Environment name): <i>Basic-VPC</i>
 
-> 💡 **Note:**
-> Oh, you've lost previous outputs?🥲  
->```bash-session
-># sam list stack-outputs --stack-name Basic-VPC
->```
-
 ```bash-session
 ### 🚨Define variables
 # export STACK_NAME=Basic-VPC
@@ -1055,6 +1049,12 @@ Deploy this changeset? [y/N]: y
   - `/FargateCluster/VPC/PublicSubnet2`
   - `/FargateCluster/VPC/PrivateSubnet1`
   - `/FargateCluster/VPC/PrivateSubnet2`
+
+> 💡 **Note:**
+> Oh, you've lost previous outputs?🥲  
+>```bash-session
+># sam list stack-outputs --stack-name Basic-VPC
+>```
 
 ```bash-session
 ### 🚨Define variables
@@ -1389,7 +1389,7 @@ Deploy this changeset? [y/N]: y
 <br>
 
 ```bash-session
-### Define variables
+### 🚨Define variables
 # PRAM_NAME=/FargateCluster/ECR/RepoName
 # REPO_NAME=`aws ssm get-parameter --name ${PRAM_NAME:-NULL} | jq -r '.Parameter.Value`
 # ACCOUNT_ID=`aws sts get-caller-identity | jq -r .Account`
@@ -1427,7 +1427,7 @@ Deploy this changeset? [y/N]: y
 <br>
 
 ```bash-session
-### Define variables
+### 🚨Define variables
 # IMAGE_NAME=${ACCOUNT_ID}.dkr.ecr.us-west-2.amazonaws.com/${REPO_NAME}:track5
 # PRAM_NAME=/FargateCluster/ECS/ContainerImageName VALUE=${IMAGE_NAME}
 
