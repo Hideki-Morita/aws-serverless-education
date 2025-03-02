@@ -43,15 +43,10 @@ Parameters:
     Default: Unknown-ACM-ARN-300-takeout-coffees-later
     Description: "The Amazon Resource Name (ARN) of the ACM certificate for securing HTTPS connections."
 
-  NatGatewayID:
-    Type: String
-    Default: Unknown-NatGtwyID-300-takeout-coffees-later
-    Description: "The ID of the NAT Gateway (must be updated after deployment if created dynamically)."
-
-  ALBSecurityGroupName:
+  ALBSecurityGroupID:
     Type: String
     Default: Unknown-ALB-SGName-300-takeout-coffees-later
-    Description: "The security group name assigned to the Application Load Balancer (must be updated after deployment)."
+    Description: "The security group ID assigned to the Application Load Balancer and Fagate's security group (must be updated after deployment)."
 
   ALBTargetGroupARN:
     Type: String
@@ -173,20 +168,12 @@ Resources:
       Value: !Ref ACMCertificateArn
       Description: "The ACM certificate ARN. (update after deployment if necessary)."
 
-  NatGatewayIDSSM:
+  ALBSecurityGroupIDSSM:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: /FargateCluster/VPC/NatGatewayID
+      Name: /FargateCluster/ALB/SecurityGroupID
       Type: String
-      Value: !Ref NatGatewayID
-      Description: "The NAT Gateway ID (update after deployment if necessary)."
-
-  ALBSecurityGroupNameSSM:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: /FargateCluster/ALB/SecurityGroupName
-      Type: String
-      Value: !Ref ALBSecurityGroupName
+      Value: !Ref ALBSecurityGroupID
       Description: "The security group name of the ALB (update after deployment if necessary)."
 
   ALBTargetGroupArnSSM:
@@ -310,13 +297,9 @@ Outputs:
     Description: "SSM Parameter storing the ACM certificate ARN."
     Value: !Ref ACMCertificateArnSSM
 
-  NatGatewayID:
-    Description: "SSM Parameter storing the NAT Gateway ID. (Temporary value)"
-    Value: !Ref NatGatewayIDSSM
-
-  ALBSecurityGroupName:
+  ALBSecurityGroupID:
     Description: "SSM Parameter storing the security group name of the ALB. (Temporary value)"
-    Value: !Ref ALBSecurityGroupNameSSM
+    Value: !Ref ALBSecurityGroupIDSSM
 
   ALBTargetGroupARN:
     Description: "SSM Parameter storing the ALB Target Group ARN. (Temporary value)"

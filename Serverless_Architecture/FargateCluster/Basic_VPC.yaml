@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Part-2 - A basic VPC network setup for testing purposes, including subnets, route tables, and gateways.
+Description: Part-1 - A basic VPC network setup for testing purposes, including subnets, route tables, and gateways.
 
 Parameters:
   ### Dynamic AZ Selection with Parameterized List:
@@ -9,13 +9,15 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /FargateCluster/VPC/VPCName
     Description: "The VPC's logical name"
+
   AvailabilityZones:
     Type: AWS::SSM::Parameter::Value<CommaDelimitedList>
     Default: /FargateCluster/VPC/AvailabilityZones
     Description: "List of usable Availability Zones"
+
   Stage:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: /FargateCluster/StageName
+    Type: String
+    Default: Test
     Description: "The Name of the environment"
 
 Resources:
@@ -24,8 +26,8 @@ Resources:
   NewVPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 10.0.0.0/16   # Defines the private IP address range for the VPC
-      EnableDnsSupport: true   # Enables DNS resolution within the VPC
+      CidrBlock: 10.0.0.0/16 # Defines the private IP address range for the VPC
+      EnableDnsSupport: true # Enables DNS resolution within the VPC
       EnableDnsHostnames: true # Enables DNS hostnames for resources
       Tags:
         - Key: Name
@@ -46,6 +48,7 @@ Resources:
     Properties:
       VpcId: !Ref NewVPC
       CidrBlock: 10.0.1.0/24 # IP range for the first public subnet
+      #AvailabilityZone: us-west-2a # Hardcoding the AZs does NOT work
       # Automatically select the first AZ
       AvailabilityZone: !Select
         - 0
@@ -324,6 +327,7 @@ Resources:
         To: 443
 
   ### Inbound Rule: Allow Ephemeral Ports for Responses ###
+  ### Very very important: Allow ephemeral response ports (1024-65535) for TCP traffic via Nat-Gateway
   PrivateInboundAllowEphemeral:
     Type: AWS::EC2::NetworkAclEntry
     Properties:

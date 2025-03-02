@@ -42,6 +42,9 @@ This solution is designed to support **education and testing environments**, pro
       - [✰ 🐾 D. 🟣VPC-Extras💰](#--d-vpc-extras)
     - [3️⃣ Deploy 🟠Lambda for ALB Logs Forwarding \& 🟢S3](#3️⃣-deploy-lambda-for-alb-logs-forwarding--s3)
     - [4️⃣ Deploy Internal 🔴ALB💰](#4️⃣-deploy-internal-alb)
+        - [✦ 🐾 **Deploy 🔴ALB:**](#--deploy-alb)
+        - [✦ 🐾 **Update the values of 🔴SSM Parameter Store:**](#--update-the-values-of-ssm-parameter-store-1)
+        - [✦ 🐾 **Verify creation:**](#--verify-creation-2)
     - [5️⃣ Deploy 🟠ECR \& 🟠ECS Fargate Cluster💰](#5️⃣-deploy-ecr--ecs-fargate-cluster)
       - [✰ 🐾 A. **Create new 🟠ECR Private Repo:**](#--a-create-new-ecr-private-repo)
       - [✰ 🐾 B. **Deploy 🟠Fargate Cluster:**](#--b-deploy-fargate-cluster)
@@ -772,11 +775,10 @@ This template stores critical infrastructure parameters in **AWS Systems Manager
   - `PublicSubnet1` : **<i>subnet-xxxc</i>**
   - `PublicSubnet2` : **<i>subnet-xxxd</i>**
   - `AvailabilityZones`: us-west-2a,us-west-2b,us-west-2c,us-west-2d
-  - `NatGatewayID` : **Unknown** (Update later)
-  - `ALBSecurityGroupName` : **Unknown** (Update later)
+  - `ALBSecurityGroupID` : **Unknown** (Update later)
   - `ALBTargetGroupARN` : **Unknown** (Update later)
   - `ALBName` : TS-ALB
-  - `ALBS3BucketName` : **Unknown** (Update later)
+  - `ALBS3BucketName` : **<i>alb-access-logs-xxx</i>** (Update later)
   - `ALBPrefix` : alb-access-logs
   - `ECSClusterName` : TS-ECS-Cluster
   - `ECSServiceName` : TS-ECS-Service
@@ -802,17 +804,13 @@ This template stores critical infrastructure parameters in **AWS Systems Manager
 
 ```bash-session
 ### 🚨Define variables (replace with your values)
-# export STACK_NAME=SSM-PS ; export ACM_CRT_ARN=xxx
+# export STACK_NAME=SSM-PS ; export ACM_CRT_ARN=arn:aws:acm:xxx ; ALBLOG_S3_BCKT_NAME=alb-access-logs-xxx
 
-### The first time
+### Deploy SSM P.S.
 # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --confirm-changeset --save-params \
  --stack-name ${STACK_NAME:-NULL} --config-env ${STACK_NAME} --s3-prefix ${STACK_NAME} -t ${STACK_NAME/-/_}.yaml \
- --parameter-overrides ParameterKey=ACMCertificateArn,ParameterValue=${ACM_CRT_ARN:-NULL}
-
-
-  ### After the second
-  # export STACK_NAME=SSM-PS ; export ACM_CRT_ARN=xxx
-  # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --config-env ${STACK_NAME:-NULL}
+ --parameter-overrides ParameterKey=ACMCertificateArn,ParameterValue=${ACM_CRT_ARN:-NULL} \
+ ParameterKey=ALBS3BucketName,ParameterValue=${ALBLOG_S3_BCKT_NAME:-NULL}
 ```
 
 ```bash-session
@@ -872,20 +870,19 @@ Deploy this changeset? [y/N]: y
 >Name                                  
 >----                                  
 >/FargateCluster/ACMCertificateArn     
->/FargateCluster/ALB/ALBName           
->/FargateCluster/ALB/ALBPrefix         
->/FargateCluster/ALB/S3BucketName      
->/FargateCluster/ALB/SecurityGroupName 
->/FargateCluster/ALB/TargetGroupARN    
->/FargateCluster/ECR/RepoName          
->/FargateCluster/ECS/ServiceName       
+>/FargateCluster/ALB/ALBName         
+>/FargateCluster/ALB/ALBPrefix      
+>/FargateCluster/ALB/S3BucketName   
+>/FargateCluster/ALB/SecurityGroupID
+>/FargateCluster/ALB/TargetGroupARN
+>/FargateCluster/ECR/RepoName
+>/FargateCluster/ECS/ServiceName
 >/FargateCluster/ECS/TaskDefinitionName
 >/FargateCluster/StageName             
 >/FargateCluster/ECS/ClusterName       
 >/FargateCluster/ECS/ContainerImageName
 >/FargateCluster/ECS/ContainerName     
->/FargateCluster/VPC/AvailabilityZones 
->/FargateCluster/VPC/NatGatewayID      
+>/FargateCluster/VPC/AvailabilityZones    
 >/FargateCluster/VPC/PrivateSubnet1    
 >/FargateCluster/VPC/PrivateSubnet2    
 >/FargateCluster/VPC/PublicSubnet1     
@@ -1056,11 +1053,33 @@ Deploy this changeset? [y/N]: y
 ># sam list stack-outputs --stack-name Basic-VPC
 >```
 
+<br>
+
+🙃 Actually, **There are two way to update.**
+
+1. 🔵**AWLCLI**
+
 ```bash-session
-### 🚨Define variables
+### 🚨Define variables (replace with your values and repeat to Subnets.)
 # PRAM_NAME=/FargateCluster/VPC/VPCID VALUE=vpc-04eb144fbc892a756
 
 # aws ssm put-parameter --name ${PRAM_NAME:-NULL} --value ${VALUE:-NULL} --type "String" --overwrite
+```
+
+or
+
+2. 🟠**AWS SAM**
+
+```bash-session
+### 🚨Define variables
+# export STACK_NAME=SSM-PS
+
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --confirm-changeset --save-params --config-env ${STACK_NAME:-NULL} \
+  --parameter-overrides ParameterKey=VPCID,ParameterValue=vpc-xxx \
+  ParameterKey=PublicSubnet1,ParameterValue=subnet-xxx \
+  ParameterKey=PublicSubnet2,ParameterValue=subnet-xxx \
+  ParameterKey=PrivateSubnet1,ParameterValue=subnet-xxx \
+  ParameterKey=PrivateSubnet2,ParameterValue=subnet-xxx
 ```
 
 <br>
@@ -1070,8 +1089,11 @@ Deploy this changeset? [y/N]: y
 - Check the result:
 
 ```bash-session
+### Swich to pwsh from zsh or bash
 # pwsh
 
+
+### 🚨Define variables
 PS1> $parameterNames = (aws ssm get-parameters-by-path --path /FargateCluster/VPC --recursive --with-decryption | ConvertFrom-Json).Parameters | Select-Object -ExpandProperty Name
 
 PS1> $batchSize = 10
@@ -1089,13 +1111,12 @@ for ($i = 0; $i -lt $parameterNames.Count; $i += $batchSize) {
 PS1> Ctrl+D
 ```
 
->```ps1 {hl_lines=["7-11"]}
+>```ps1 {hl_lines=["6-10"]}
 >Fetching parameters: /FargateCluster/VPC/AvailabilityZones, /FargateCluster/VPC/NatGatewayID, /FargateCluster/VPC/PrivateSubnet1, /FargateCluster/VPC/PrivateSubnet2, /FargateCluster/VPC/PublicSubnet1, /FargateCluster/VPC/PublicSubnet2, /FargateCluster/VPC/VPCID, /FargateCluster/VPC/VPCName
 >
 >Name                                  Value
 >----                                  -----
 >/FargateCluster/VPC/AvailabilityZones us-west-2a,us-west-2b,us-west-2c,us-west-2d
->/FargateCluster/VPC/NatGatewayID      Unknown-NatGtwyID-300-takeout-coffees-later
 >/FargateCluster/VPC/PrivateSubnet1    subnet-0d7f2ab2debcfaec5
 >/FargateCluster/VPC/PrivateSubnet2    subnet-041e2332ed5212e8d
 >/FargateCluster/VPC/PublicSubnet1     subnet-0bd101d568021aa90
@@ -1320,7 +1341,11 @@ Deploy this changeset? [y/N]: y
 
 </details>
 
+---
+
 <br>
+
+##### ✦ 🐾 **Deploy 🔴ALB:**
 
 - `--config-env` (Environment name): <i>ALB-Internal</i>
 
@@ -1343,6 +1368,49 @@ Previewing CloudFormation changeset before deployment
 ======================================================
 Deploy this changeset? [y/N]: y
 ```
+
+<br>
+
+##### ✦ 🐾 **Update the values of 🔴SSM Parameter Store:**
+
+- Update the values of the following parameters
+  - `/FargateCluster/ALB/SecurityGroupID`
+  - `/FargateCluster/ALB/TargetGroupARN`
+
+<br>
+
+🙃 Again, **There are two way to update.**
+
+1. 🔵**AWLCLI**
+
+```bash-session
+### 🚨Define variables (replace with your values and repeat to Subnets.)
+# PRAM_NAME=/FargateCluster/ALB/SecurityGroupID VALUE=sg-030424c955cc46c12
+
+# aws ssm put-parameter --name ${PRAM_NAME:-NULL} --value ${VALUE:-NULL} --type "String" --overwrite
+```
+
+or
+
+2. 🟠**AWS SAM**
+
+```bash-session
+### 🚨Define variables (replace with your values and repeat to Subnets.)
+# export STACK_NAME=SSM-PS ; ALBTargetGroupARN=arn:aws:elasticloadbalancing:us-west-2:041920240204:targetgroup/TestTargetGroup/f3b57a47b9a215ee
+
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --confirm-changeset --save-params --config-env ${STACK_NAME:-NULL} \
+  --parameter-overrides ParameterKey=ALBTargetGroupARN,ParameterValue=${ALBTargetGroupARN:-NULL} \
+  ParameterKey=ALBSecurityGroupID,ParameterValue=sg-030424c955cc46c12
+```
+
+<br>
+
+##### ✦ 🐾 **Verify creation:**
+
+- Check the result: 
+  - `--path /FargateCluster/VPC`
+
+[👀 **Look at the "2️⃣ Deploy 🟣VPC"**](#--verify-creation-1)
 
 ---
 
