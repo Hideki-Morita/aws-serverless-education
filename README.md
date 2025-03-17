@@ -6,6 +6,6 @@
 
 |High-level overview|Details|
 |---|---|
-|![image](./assets/FargateCluster-HighLevel-Overview.jpg)|![image](./assets/FargateCluster-Overview.jpg?)|
+|![image](./assets/FargateCluster-HighLevel-Overview.jpg?width=500px)|![image](./assets/FargateCluster-Overview.jpg)|
 
 ---
