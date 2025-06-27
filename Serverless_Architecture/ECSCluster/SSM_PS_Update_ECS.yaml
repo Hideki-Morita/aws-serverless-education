@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: "Part-7 - Stores key infrastructure parameters (ECS Cluster) in AWS Systems Manager (SSM) Parameter Store."
+
+Parameters:
+  ECSClusterARN:
+    Type: String
+    Default: Unknown-ECSCluster-ARN-300-takeout-coffees-later
+    Description: "The Amazon Resource Name (ARN) of the ECSCluster."
+
+  FargateSecurityGroupID:
+    Type: String
+    Default: Unknown-FargateSGARN-300-takeout-coffees-later
+    Description: "The ID of the security group assigned to the Fagate's security group."
+
+Resources:
+  ECSClusterARNSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/ECS/ClusterARN
+      Type: String
+      Value: !Ref ECSClusterARN
+      Description: "The Amazon Resource Name (ARN) of the ECSCluster."
+
+  FargateSecurityGroupIDSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/ECS/SecurityGroupID
+      Type: String
+      Value: !Ref FargateSecurityGroupID
+      Description: "The ID of the security group assigned to the Fagate's security group."
+
+Outputs:
+  SSMParamECSClusterARN:
+    Description: "SSM Parameter storing The Amazon Resource Name (ARN) of the ECSCluster. (Updated)"
+    Value: !Ref ECSClusterARNSSM
+
+  SSMParamFargateSecurityGroupID:
+    Description: "SSM Parameter storing The ID of the security group assigned to the Fagate's security group. (Updated)"
+    Value: !Ref FargateSecurityGroupIDSSM

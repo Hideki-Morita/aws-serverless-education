@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: "Part-2 - Stores key infrastructure parameters (VPC) in AWS Systems Manager (SSM) Parameter Store."
+
+Parameters:
+  VPCID:
+    Type: String
+    Default: Unknown-vpc-xxxx-300-takeout-coffees-later
+    Description: "The ID of the VPC where resources are deployed."
+
+  PublicSubnet1:
+    Type: String
+    Default: Unknown-subnet-xxxa-300-takeout-coffees-later
+    Description: "The ID of the first public subnet."
+
+  PublicSubnet2:
+    Type: String
+    Default: Unknown-subnet-xxxb-300-takeout-coffees-later
+    Description: "The ID of the second public subnet."
+
+  PrivateSubnet1:
+    Type: String
+    Default: Unknown-subnet-xxxc-300-takeout-coffees-later
+    Description: "The ID of the first private subnet."
+
+  PrivateSubnet2:
+    Type: String
+    Default: Unknown-subnet-xxxd-300-takeout-coffees-later
+    Description: "The ID of the second private subnet."
+
+Resources:
+  VPCSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/VPC/VPCID
+      Type: String
+      Value: !Ref VPCID
+      Description: "The ID of the VPC where resources are deployed."
+
+  PublicSubnet1SSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/VPC/PublicSubnet1
+      Type: String
+      Value: !Ref PublicSubnet1
+      Description: "The ID of the first public subnet."
+
+  PublicSubnet2SSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/VPC/PublicSubnet2
+      Type: String
+      Value: !Ref PublicSubnet2
+      Description: "The ID of the second public subnet."
+
+  PrivateSubnet1SSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/VPC/PrivateSubnet1
+      Type: String
+      Value: !Ref PrivateSubnet1
+      Description: "The ID of the first private subnet."
+
+  PrivateSubnet2SSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/VPC/PrivateSubnet2
+      Type: String
+      Value: !Ref PrivateSubnet2
+      Description: "The ID of the second private subnet."
+
+Outputs:
+  VPC:
+    Description: "SSM Parameter storing The ID of the VPC. (Updated)"
+    Value: !Ref VPCSSM
+
+  PublicSubnet1:
+    Description: "SSM Parameter storing The ID of the first public subnet. (Updated)"
+    Value: !Ref PublicSubnet1SSM
+
+  PublicSubnet2:
+    Description: "SSM Parameter storing The ID of the second public subnet. (Updated)"
+    Value: !Ref PublicSubnet2SSM
+
+  PrivateSubnet1:
+    Description: "SSM Parameter storing The ID of the first private subnet. (Updated)"
+    Value: !Ref PrivateSubnet1SSM
+
+  PrivateSubnet2:
+    Description: "SSM Parameter storing The ID of the second private subnet. (Updated)"
+    Value: !Ref PrivateSubnet2SSM

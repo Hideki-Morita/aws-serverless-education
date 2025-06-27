@@ -1,0 +1,55 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowSAMAccess",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": [
+          "cloudformation.amazonaws.com",
+          "serverlessrepo.amazonaws.com"
+        ]
+      },
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject"
+      ],
+      "Resource": "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}/*",
+      "Condition": {
+        "StringEquals": {
+          "AWS:SourceAccount": "${ACCOUNT_ID}"
+        }
+      }
+    },
+    {
+      "Sid": "AllowAccountToAvoidLockout",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:*",
+      "Resource": [
+        "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}",
+        "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:PrincipalAccount": "${ACCOUNT_ID}"
+        }
+      }
+    },
+    {
+      "Sid": "ExplicitDenyPublicAccess",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": "*",
+      "Resource": [
+        "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}",
+        "arn:aws:s3:::${SAM_CLI_SOURCE_BUCKET}/*"
+      ],
+      "Condition": {
+        "Bool": {
+          "aws:SecureTransport": "false"
+        }
+      }
+    }
+  ]
+}

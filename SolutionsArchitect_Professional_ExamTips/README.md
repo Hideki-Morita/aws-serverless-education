@@ -354,8 +354,6 @@ Here’s the relational list mapping all domains and task statements from the **
 
 ---
 
----
-
 <br>
 
 #### ✰ Task Statement 3.2: Determine a strategy to improve security.
@@ -378,21 +376,14 @@ Here’s the relational list mapping all domains and task statements from the **
 | 4. Reviewing comprehensive traceability of users and services| - **`SEC04-BP02`**: Capture logs, findings, and metrics in standardized locations.|
 || - **`SEC06-BP02`**: Provision compute from hardened images.|
 || - **`SEC03-BP07`**: Analyze public and cross-account access|
+|| 5. Prioritizing automated responses to the detection of vulnerabilities| - **`SEC06-BP01`**: Perform vulnerability management|
+|| - **`SEC06-BP05`**: Automate compute protection|
+|| - - `SEC06-BP04`: Validate software integrity.|
+| 6. Designing and implementing a patch and update process| - **`OPS05-BP05`**: Perform patch management.|
+|| - **`SEC06-BP01`**: Perform vulnerability management.|
+|| - **`SEC06-BP02`**: Provision compute from hardened images.|
+|| - **`SEC01-BP04`**: Stay up to date with security threats and recommendations.|
+| 7. Designing and implementing a backup process| - **`REL09-BP01`**: Identify and back up all data that needs to be backed up, or reproduce the data from sources|
+|| - **`REL09-BP03`**: Perform data backup automatically|
 
-
-5.Prioritizing automated responses to the detection of vulnerabilities
-- SEC06-BP03: Reduce manual management and interactive access.
-- SEC06-BP04: Validate software integrity.
-
-
-6.Designing and implementing a patch and update process
-- OPS05-BP05: Perform patch management.
-- SEC06-BP01: Perform vulnerability management.
-
-7.Designing and implementing a backup process
-- REL09-BP01: Identify and back up all data that needs to be backed up, or reproduce the data from sources.
-- REL09-BP03: Perform data backup automatically.
-
-8.Employing remediation techniques
-- OPS07-BP04: Use playbooks to investigate issues.
-- SEC07-BP03: Automate identification and classification.
+---

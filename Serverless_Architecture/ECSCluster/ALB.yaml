@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: "This acts as a controller to deploy subcomponents in order (Must put --capabilities CAPABILITY_AUTO_EXPAND option.)" 
+ 
+Resources:
+  ALB:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./ALB_Internal.yaml
+
+  SSMParameterStoreUpdateALB:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./SSM_PS_Update_ALB.yaml
+      Parameters:
+        ALBSecurityGroupID: !GetAtt ALB.Outputs.ALBSecurityGroupID
+        ALBTargetGroupBlueARN: !GetAtt ALB.Outputs.ALBTargetGroupBlueARN
+        ALBTargetGroupGreenARN: !GetAtt ALB.Outputs.ALBTargetGroupGreenARN
+
+Outputs:
+  ALBName:
+    Description: Name of the ALB
+    Value: !GetAtt ALB.Outputs.ALBName
+
+  ALBArn:
+    Description: ARN of the ALB
+    Value: !GetAtt ALB.Outputs.ALBPrivateARN
+
+  ALBPrivateDNS:
+    Description: Private DNS name of the Application Load Balancer
+    Value: !GetAtt ALB.Outputs.ALBPrivateDNS
+
+  ALBTargetGroupBlueARN:
+    Description: ARN of the ALB Target Group of Blue
+    Value: !GetAtt ALB.Outputs.ALBTargetGroupBlueARN
+
+  ALBTargetGroupGreenARN:
+    Description: ARN of the ALB Target Group of Green
+    Value: !GetAtt ALB.Outputs.ALBTargetGroupGreenARN
+
+  PrivateHTTPSSecurityGroupID:
+    Description: Security Group ID of the CloudShell
+    Value: !GetAtt ALB.Outputs.PrivateHTTPSSecurityGroupID
+
+  ALBSecurityGroupID:
+    Description: Security Group ID of the ALB
+    Value: !GetAtt ALB.Outputs.ALBSecurityGroupID
+
+  LambdaSecurityGroupID:
+    Description: Security Group ID of the CloudShell
+    Value: !GetAtt ALB.Outputs.LambdaSecurityGroupID
+
+  SSMParamALBSecurityGroupID:
+    Description: "SSM Parameter storing the Security Group ID of the ALB. (Updated)"
+    Value: !GetAtt SSMParameterStoreUpdateALB.Outputs.ALBSecurityGroupID
+
+  SSMParamALBTargetGroupBlueARN:
+    Description: "SSM Parameter storing the ALB Target Group ARN of Blue. (Updated)"
+    Value: !GetAtt SSMParameterStoreUpdateALB.Outputs.ALBTargetGroupBlueARN
+
+  SSMParamALBTargetGroupGreenARN:
+    Description: "SSM Parameter storing the ALB Target Group ARN of Green. (Updated)"
+    Value: !GetAtt SSMParameterStoreUpdateALB.Outputs.ALBTargetGroupGreenARN
+
+  ALBCostWarning:
+    Description: "⚠️ Warning: The Application Load Balancer (ALB) is a paid service and incurs hourly and LCU-based charges. 🕒 Be cautious!"
+    Value: "ALB is running and may generate costs. Delete the stack when not in use."

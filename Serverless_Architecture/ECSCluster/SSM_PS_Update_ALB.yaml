@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: "Part-6 - Stores key infrastructure parameters (ALB) in AWS Systems Manager (SSM) Parameter Store."
+
+Parameters:
+  ALBSecurityGroupID:
+    Type: String
+    Default: Unknown-ALB-SGName-300-takeout-coffees-later
+    Description: "The ID of the security group assigned to the ALB and Fagate's security group."
+
+  ALBTargetGroupBlueARN:
+    Type: String
+    Default: Unknown-ALB-TGARN-300-takeout-coffees-later
+    Description: "The Amazon Resource Name (ARN) of the Blue ALB Target Group."
+
+  ALBTargetGroupGreenARN:
+    Type: String
+    Default: Unknown-ALB-TGARN-300-takeout-coffees-later
+    Description: "The Amazon Resource Name (ARN) of the Green ALB Target Group."
+
+Resources:
+  ALBSecurityGroupIDSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/ALB/SecurityGroupID
+      Type: String
+      Value: !Ref ALBSecurityGroupID
+      Description: "The ID of the security group assigned to the ALB and Fagate's security group."
+
+  ALBTargetGroupBlueArnSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/ALB/TargetGroupBlueARN
+      Type: String
+      Value: !Ref ALBTargetGroupBlueARN
+      Description: "The Amazon Resource Name (ARN) of the Blue ALB Target Group."
+
+  ALBTargetGroupGreenArnSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/ALB/TargetGroupGreenARN
+      Type: String
+      Value: !Ref ALBTargetGroupGreenARN
+      Description: "The Amazon Resource Name (ARN) of the Green ALB Target Group."
+
+Outputs:
+  ALBSecurityGroupID:
+    Description: "SSM Parameter storing The ID of the security group assigned to the ALB and Fagate's security group. (Updated)"
+    Value: !Ref ALBSecurityGroupIDSSM
+
+  ALBTargetGroupBlueARN:
+    Description: "SSM Parameter storing The Amazon Resource Name (ARN) of the Blue ALB Target Group. (Updated)"
+    Value: !Ref ALBTargetGroupBlueArnSSM
+
+  ALBTargetGroupGreenARN:
+    Description: "SSM Parameter storing The Amazon Resource Name (ARN) of the Green ALB Target Group. (Updated)"
+    Value: !Ref ALBTargetGroupGreenArnSSM

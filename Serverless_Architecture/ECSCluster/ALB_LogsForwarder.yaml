@@ -1,0 +1,211 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: "Part-5 - The Lambda Function which is for forwarding ALB's log to the CloudWatch Logs." 
+
+Globals:
+  Function:
+    Timeout: 20
+    Tracing: Active
+    Runtime: python3.12
+    Layers:
+      - !Sub arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPythonV3-python312-arm64:7
+
+Parameters:
+  ALBName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /ECSCluster/ALB/ALBName
+    Description: "The name of the ALB."
+
+  ALBS3BucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /ECSCluster/ALB/S3BucketName
+    Description: "The name of the S3 bucket to store ALB access logs."
+
+  ALBPrefix:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /ECSCluster/ALB/ALBPrefix
+    Description: "Prefix for ALB access log files in the S3 bucket."
+
+  Stage:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /ECSCluster/StageName
+    Description: "The Name of the environment."
+
+Resources:
+  ### Log Groups ###
+  ALBLogsForwarderLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/Lambda/ECSCluster/${Stage}/ALBLogsForwarder"
+      RetentionInDays: 3
+
+  ALBLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/ALB/ECSCluster/${Stage}/AccessLogs/${ALBName}"
+      RetentionInDays: 3
+
+  ### S3 Bucket for ALB Logs ###
+  ALBLogS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref ALBS3BucketName  # Dynamically retrieved from SSM Parameter Store
+      OwnershipControls:
+        Rules:
+        - ObjectOwnership: BucketOwnerEnforced # Enforce bucket owner control
+      LifecycleConfiguration: # Optional: Define a lifecycle policy to delete old logs
+        Rules:
+          - Status: Enabled
+            ExpirationInDays: 3
+            Prefix: !Ref ALBPrefix
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:   # Block public access to the bucket
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Purpose
+          Value: ALB Access Logs
+        - Key: Environment
+          Value: !Ref Stage
+        - Key: Where
+          Value: !Ref "AWS::Region"
+        - Key: For
+          Value: Education
+        - Key: System
+          Value: ECSCluster
+
+  ### S3 Bucket Policy for ALB ###
+  ALBLogS3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ALBLogS3Bucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          # ✅ 1️⃣ Allow ALB (Elastic Load Balancer) to Write Access Logs
+          - Sid: AllowALBAccessLogs
+            Effect: Allow
+            Principal:
+              AWS:
+                - "arn:aws:iam::797873946194:root"  # Oregon's elb-account-id
+            Action: s3:PutObject
+            Resource: !Sub "arn:aws:s3:::${ALBS3BucketName}/${ALBPrefix}/*"
+          # ✅ 2️⃣ Allow Account Full Access
+          - Sid: AllowAccountToAvoidLockout
+            Effect: Allow
+            Principal: "*"
+            Action: "s3:*"
+            Resource: 
+              - !Sub "arn:aws:s3:::${ALBS3BucketName}"
+              - !Sub "arn:aws:s3:::${ALBS3BucketName}/*"
+            Condition:
+              StringEquals:
+                "aws:PrincipalAccount": !Ref "AWS::AccountId"
+          # 🚫 3️⃣ Explicitly Deny Public Access (Enforce TLS)
+          - Sid: ExplicitDenyPublicAccess
+            Effect: Deny
+            Principal: "*"
+            Action: "*"
+            Resource:
+              - !Sub "arn:aws:s3:::${ALBS3BucketName}"
+              - !Sub "arn:aws:s3:::${ALBS3BucketName}/*"
+            Condition:
+              Bool:
+                "aws:SecureTransport": false
+
+  ### 🛠️ IAM Role for Lambda ###
+  ALBLogsForwarderRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      PermissionsBoundary: !Sub "arn:aws:iam::${AWS::AccountId}:policy/Protect-Me" # Attach the required boundary
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+      Policies:
+        - PolicyName: CloudWatchLogs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogStreams
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/Lambda/ECSCluster/${Stage}/*:*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/ALB/ECSCluster/${Stage}/*:*"
+        - PolicyName: S3AccessExecution
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:aws:s3:::${ALBS3BucketName}"
+                  - !Sub "arn:aws:s3:::${ALBS3BucketName}/${ALBPrefix}/*"
+
+  ### Lambda Function for Forwarding Logs ###
+  ALBLogsForwarderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/api
+      Handler: alb_logs_forwarder.lambda_handler
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      Role: !GetAtt ALBLogsForwarderRole.Arn  # Use custom role with boundary
+      Environment:
+        Variables:
+          ALB_LOG_GROUP_NAME: !Ref ALBLogGroup
+          TARGET_LOG_GROUP_NAME: !Ref ALBLogsForwarderLogGroup
+          STAGE: !Ref Stage
+      Events:
+        S3Trigger:
+          Type: S3
+          Properties:
+            Bucket: !Ref ALBLogS3Bucket
+            Events:
+              - s3:ObjectCreated:Put
+              - s3:ObjectCreated:CompleteMultipartUpload  # Handles large logs
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: !Ref ALBPrefix
+      LoggingConfig:
+        ApplicationLogLevel: INFO   # Controls the application log level (DEBUG, INFO, etc.)
+        LogFormat: JSON             # Defines the log format (JSON or Text)
+        LogGroup: !Ref ALBLogsForwarderLogGroup
+
+Outputs:
+  ALBLogsForwarderARN:
+    Description: ARN of the Lambda function.
+    Value: !Ref ALBLogsForwarderFunction
+
+  ALBLogsForwarderLogGroupName:
+    Description: Name of the CloudWatch Log Group for Lambda.
+    Value: !Ref ALBLogsForwarderLogGroup
+
+  ALBLogGroupName:
+    Description: Name of the CloudWatch Log Group for ALB logs.
+    Value: !Ref ALBLogGroup
+
+  ALBCostWarning:
+    Description: "⚠️ Warning: ALB is a paid service with hourly and LCU-based charges. 🕒 Be cautious!"
+    Value: "ALB is running and may generate costs. Delete the stack when not in use."

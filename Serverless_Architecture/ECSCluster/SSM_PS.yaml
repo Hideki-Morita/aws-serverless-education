@@ -1,0 +1,278 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: "Part-1 - Creates and stores essential infrastructure parameters in AWS Systems Manager (SSM) Parameter Store, including VPC, ALB, ECS, and container settings for the environment."
+
+Parameters:
+  VPCName:
+    Type: String
+    Default: TS-VPC
+    Description: "The name of the VPC."
+
+  AvailabilityZones:
+    Type: String
+    Default: us-west-2a,us-west-2b,us-west-2c,us-west-2d
+    Description: "Comma-separated list of Availability Zones (AZs) for resource distribution and high availability."
+
+  ACMCertificateArn:
+    Type: String
+    Default: Unknown-ACM-ARN-300-takeout-coffees-later
+    Description: "The Amazon Resource Name (ARN) of the ACM certificate used for securing HTTPS connections to the ALB."
+
+  ALBName:
+    Type: String
+    Default: TS-ALB
+    Description: "The name of the Application Load Balancer (ALB)."
+
+  ALBS3BucketName:
+    Type: String
+    Default: Unknown-alb-logs-300-takeout-coffees-later
+    Description: "The name of the S3 bucket where ALB access logs will be stored."
+
+  ALBPrefix:
+    Type: String
+    Default: alb-access-logs
+    Description: "The prefix applied to ALB access log files in the S3 bucket."
+
+  ECSClusterName:
+    Type: String
+    Default: TS-ECS-Cluster
+    Description: "The name of the ECS cluster."
+
+  ECSServiceBlueName:
+    Type: String
+    Default: TS-ECS-Service-Blue
+    Description: "The name of the Blue ECS service."
+
+  ECSTaskDefinitionBlueName:
+    Type: String
+    Default: TS-11
+    Description: "The name of the Blue ECS task definition."
+
+  ECSContainerBlueName:
+    Type: String
+    Default: TTPD-caddy-tls-blue
+    Description: "The container name inside the Blue ECS task definition."
+
+  ECSContainerImageBlueName:
+    Type: String
+    Default: Unknown-ECS-Container-ImageName-300-takeout-coffees-later
+    Description: "The name of the container image used by the Blue ECS service. (Update after image creation)"
+
+  ECSServiceGreenName:
+    Type: String
+    Default: TS-ECS-Service-Green
+    Description: "The name of the Green ECS service."
+
+  ECSTaskDefinitionGreenName:
+    Type: String
+    Default: TS-11
+    Description: "The name of the Green ECS task definition."
+
+  ECSContainerGreenName:
+    Type: String
+    Default: TTPD-caddy-tls-green
+    Description: "The container name inside the Green ECS task definition."
+
+  ECSContainerImageGreenName:
+    Type: String
+    Default: Unknown-ECS-Container-ImageName-300-takeout-coffees-later
+    Description: "The name of the container image used by the Green ECS service. (Update after image creation)"
+
+  StageName:
+    Type: String
+    Default: Test
+    Description: "The name of the environment stage. (e.g., Test, Staging, Production)."
+
+Resources:
+  VPCNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/VPC/VPCName
+      Type: String
+      Value: !Ref VPCName
+      Description: "The name of the VPC."
+
+  AvailabilityZonesSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/VPC/AvailabilityZones
+      Type: StringList
+      Value: !Ref AvailabilityZones
+      Description: "The list of Availability Zones."
+
+  ACMCertificateArnSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/ACMCertificateArn
+      Type: String
+      Value: !Ref ACMCertificateArn
+      Description: "The Amazon Resource Name (ARN) of the ACM certificate used for securing HTTPS connections to the ALB."
+
+  ALBNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/ALB/ALBName
+      Type: String
+      Value: !Ref ALBName
+      Description: "The name of the ALB."
+
+  ALBS3BucketSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/ALB/S3BucketName
+      Type: String
+      Value: !Ref ALBS3BucketName
+      Description: "The name of the ALB log storage S3 bucket. (update after deployment if necessary)."
+
+  ALBPrefixSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/ALB/ALBPrefix
+      Type: String
+      Value: !Ref ALBPrefix
+      Description: "The prefix applied to ALB access log files in the S3 bucket."
+
+  ECSClusterNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/ECS/ClusterName
+      Type: String
+      Value: !Ref ECSClusterName
+      Description: "The name of the ECS cluster."
+
+  ECSServiceBlueNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/ECS/Blue/ServiceName
+      Type: String
+      Value: !Ref ECSServiceBlueName
+      Description: "The name of the Blue ECS service."
+
+  ECSTaskDefinitionBlueNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/ECS/Blue/TaskDefinitionName
+      Type: String
+      Value: !Ref ECSTaskDefinitionBlueName
+      Description: "The name of the Blue ECS task definition."
+
+  ECSContainerBlueNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/ECS/Blue/ContainerName
+      Type: String
+      Value: !Ref ECSContainerBlueName
+      Description: "The name of the container name inside the Blue ECS task definition."
+
+  ECSContainerImageBlueNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/ECS/Blue/ContainerImageName
+      Type: String
+      Value: !Ref ECSContainerImageBlueName
+      Description: "The name of the Blue ECS container image. (update after deployment if necessary)."
+
+  ECSServiceGreenNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/ECS/Green/ServiceName
+      Type: String
+      Value: !Ref ECSServiceGreenName
+      Description: "The name of the Green ECS service."
+
+  ECSTaskDefinitionGreenNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/ECS/Green/TaskDefinitionName
+      Type: String
+      Value: !Ref ECSTaskDefinitionGreenName
+      Description: "The name of the Green ECS task definition."
+
+  ECSContainerGreenNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/ECS/Green/ContainerName
+      Type: String
+      Value: !Ref ECSContainerGreenName
+      Description: "The name of the container name inside the Green ECS task definition."
+
+  ECSContainerImageGreenNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/ECS/Green/ContainerImageName
+      Type: String
+      Value: !Ref ECSContainerImageGreenName
+      Description: "The name of the Green ECS container image. (update after deployment if necessary)."
+
+  StageNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/StageName
+      Type: String
+      Value: !Ref StageName
+      Description: "The name of the environment stage."
+
+Outputs:
+  VPCName:
+    Description: "SSM Parameter storing The name of the VPC."
+    Value: !Ref VPCNameSSM
+
+  AvailabilityZones:
+    Description: "SSM Parameter storing the list of Availability Zones."
+    Value: !Ref AvailabilityZonesSSM
+
+  ACMCertificateArn:
+    Description: "SSM Parameter storing The Amazon Resource Name (ARN) of the ACM certificate used for securing HTTPS connections to the ALB."
+    Value: !Ref ACMCertificateArnSSM
+
+  ALBName:
+    Description: "SSM Parameter storing The name of the ALB."
+    Value: !Ref ALBNameSSM
+
+  ALBS3BucketName:
+    Description: "SSM Parameter storing The name of the S3 bucket where ALB access logs will be stored."
+    Value: !Ref ALBS3BucketSSM
+
+  ALBPrefix:
+    Description: "SSM Parameter storing The prefix applied to ALB access log files in the S3 bucket."
+    Value: !Ref ALBPrefixSSM
+
+  ECSClusterName:
+    Description: "SSM Parameter storing The name of the ECS cluster."
+    Value: !Ref ECSClusterNameSSM
+
+  ECSServiceBlueName:
+    Description: "SSM Parameter storing The name of the Blue ECS service."
+    Value: !Ref ECSServiceBlueNameSSM
+
+  ECSTaskDefinitionBlueName:
+    Description: "SSM Parameter storing The name of the Blue ECS task definition."
+    Value: !Ref ECSTaskDefinitionBlueNameSSM
+
+  ECSContainerBlueName:
+    Description: "SSM Parameter storing The name of the container name inside the Blue ECS task definition."
+    Value: !Ref ECSContainerBlueNameSSM
+
+  ECSContainerImageBlueName:
+    Description: "SSM Parameter storing The name of the Blue ECS container image. (Temporary value)"
+    Value: !Ref ECSContainerImageBlueNameSSM
+
+  ECSServiceGreenName:
+    Description: "SSM Parameter storing The name of the Green ECS service."
+    Value: !Ref ECSServiceGreenNameSSM
+
+  ECSTaskDefinitionGreenName:
+    Description: "SSM Parameter storing The name of the Green ECS task definition."
+    Value: !Ref ECSTaskDefinitionGreenNameSSM
+
+  ECSContainerGreenName:
+    Description: "SSM Parameter storing The name of the container name inside the Green ECS task definition."
+    Value: !Ref ECSContainerGreenNameSSM
+
+  ECSContainerImageGreenName:
+    Description: "SSM Parameter storing The name of the Green ECS container image. (Temporary value)"
+    Value: !Ref ECSContainerImageGreenNameSSM
+
+  StageName:
+    Description: "SSM Parameter storing The name of the environment stage."
+    Value: !Ref StageNameSSM

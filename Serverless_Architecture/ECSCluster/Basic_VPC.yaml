@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: "This acts as a controller to deploy subcomponents in order (Must put --capabilities CAPABILITY_AUTO_EXPAND option.)"
+
+Resources:
+  VPC:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./VPC.yaml
+
+  SSMParameterStoreUpdateVPC:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./SSM_PS_Update_VPC.yaml
+      Parameters:
+        VPCID: !GetAtt VPC.Outputs.VPCID
+        PublicSubnet1: !GetAtt VPC.Outputs.PublicSubnet1ID
+        PublicSubnet2: !GetAtt VPC.Outputs.PublicSubnet2ID
+        PrivateSubnet1: !GetAtt VPC.Outputs.PrivateSubnet1ID
+        PrivateSubnet2: !GetAtt VPC.Outputs.PrivateSubnet2ID
+
+Outputs:
+  VPCID:
+    Description: "The ID of the VPC."
+    Value: !GetAtt VPC.Outputs.VPCID
+
+  PublicSubnetIDs:
+    Description: "The list of Public Subnet IDs."
+    Value: !Join [ ",", [ !GetAtt VPC.Outputs.PublicSubnet1ID, !GetAtt VPC.Outputs.PublicSubnet2ID ]]
+
+  PrivateSubnetIDs:
+    Description: "The list of Private Subnet IDs."
+    Value: !Join [ ",", [ !GetAtt VPC.Outputs.PrivateSubnet1ID, !GetAtt VPC.Outputs.PrivateSubnet2ID ]]
+
+  InternetGatewayID:
+    Description: "The ID of the Internet Gateway."
+    Value: !GetAtt VPC.Outputs.InternetGatewayID
+
+  PublicRouteTableIDs:
+    Description: "The list of Public Route table IDs."
+    Value: !Join [ ",", [ !GetAtt VPC.Outputs.PublicRouteTable1ID, !GetAtt VPC.Outputs.PublicRouteTable2ID ]]
+
+  PublicNetworkAclID:
+    Description: "The ID of the public network ACL associated with the public subnets within the VPC."
+    Value: !GetAtt VPC.Outputs.PublicNetworkAclID
+
+  PrivateNetworkAclID:
+    Description: "The ID of the private network ACL associated with the private subnets within the VPC."
+    Value: !GetAtt VPC.Outputs.PrivateNetworkAclID
+
+  SSMParamVPC:
+    Description: "SSM Parameter storing The ID of the VPC. (Updated)"
+    Value: !GetAtt SSMParameterStoreUpdateVPC.Outputs.VPC
+
+  SSMParamPublicSubnet1:
+    Description: "SSM Parameter storing The ID of the first public subnet. (Updated)"
+    Value: !GetAtt SSMParameterStoreUpdateVPC.Outputs.PublicSubnet1
+
+  SSMParamPublicSubnet2:
+    Description: "SSM Parameter storing The ID of the second public subnet. (Updated)"
+    Value: !GetAtt SSMParameterStoreUpdateVPC.Outputs.PublicSubnet2
+
+  SSMParamPrivateSubnet1:
+    Description: "SSM Parameter storing The ID of the first private subnet. (Updated)"
+    Value: !GetAtt SSMParameterStoreUpdateVPC.Outputs.PrivateSubnet1
+
+  SSMParamPrivateSubnet2:
+    Description: "SSM Parameter storing The ID of the second private subnet. (Updated)"
+    Value: !GetAtt SSMParameterStoreUpdateVPC.Outputs.PrivateSubnet2

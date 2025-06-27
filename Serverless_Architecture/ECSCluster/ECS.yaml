@@ -1,0 +1,34 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: "This acts as a controller to deploy subcomponents in order (Must put --capabilities CAPABILITY_AUTO_EXPAND option.)" 
+ 
+Resources:
+  ECS:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./ECSCluster.yaml
+
+  SSMParameterStoreUpdateECS:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./SSM_PS_Update_ECS.yaml
+      Parameters:
+        ECSClusterARN: !GetAtt ECS.Outputs.ECSClusterARN
+        FargateSecurityGroupID: !GetAtt ECS.Outputs.FargateSecurityGroupID
+
+Outputs:
+  ECSClusterARN:
+    Description: ARN of the ECS Cluster
+    Value: !GetAtt ECS.Outputs.ECSClusterARN
+
+  FargateSecurityGroup:
+    Description: Security Group of the Fargate
+    Value: !GetAtt ECS.Outputs.FargateSecurityGroupARN
+
+  SSMParamECSClusterARN:
+    Description: "SSM Parameter storing the ECS Cluster ARN. (Updated)"
+    Value: !GetAtt SSMParameterStoreUpdateECS.Outputs.SSMParamECSClusterARN
+
+  SSMParamFargateSecurityGroupID:
+    Description: "SSM Parameter storing the Security Group ID of the Fargate. (Updated)"
+    Value: !GetAtt SSMParameterStoreUpdateECS.Outputs.SSMParamFargateSecurityGroup
