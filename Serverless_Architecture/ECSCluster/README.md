@@ -74,6 +74,8 @@ The stack includes:
 - 🟠**ECS Cluster** and 🔴**Application Auto Scaling** for serverless container workloads
 - <i>Manual operations</i>:
   - 🔴**AWS Certificate Manager** (ACM) for provide End-to-End encrypt transit 
+  - 🟢**S3 Bucket** for 🟠**SAM** Artifacts
+  - 🟠**ECR Private Repository** for zero trusted secure container images
 
 |High-level overview|
 |---|

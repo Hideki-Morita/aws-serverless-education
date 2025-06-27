@@ -2,7 +2,7 @@
 
 <br>
 
-- [**Cloud-Native Application architecture: Fargate Cluster**](./Serverless_Architecture/FargateCluster/README.md)
+- [**Cloud-Native Application architecture: The AWS Graviton based ECS Fargate Cluster**](./Serverless_Architecture/ECSCluster/README.md)
 
 |High-level overview|Details|
 |---|---|
