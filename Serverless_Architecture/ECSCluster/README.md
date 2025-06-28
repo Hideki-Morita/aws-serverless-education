@@ -385,8 +385,9 @@ This isolates dependencies required for this project from your **global Python e
 
 ```bash-session
 # cd /path/to/your/project
+# git init
 # git clone https://github.com/Hideki-Morita/aws-serverless-education.git
-# cd serverless-education/Serverless_Architecture/ECSCluster
+# ln -s aws-serverless-education/Serverless_Architecture/ECSCluster . && cd ECSCluster
 ```
 
 >```console
@@ -1135,8 +1136,9 @@ This template stores critical infrastructure parameters in **AWS Systems Manager
 - `ECSServiceGreenName` : TS-ECS-Service-Green
 - `ECSContainerBlueName` : TTPD-caddy-tls-blue
 - `ECSContainerGreenName` : TTPD-caddy-tls-green
-- `ECSContainerImageBlueName` : **Unknown** (Update 300 takeout coffees later)
-- `ECSContainerImageGreenName` : **Unknown** (Update 300 takeout coffees later)
+- `ECSContainerImageBlueName` : **<i>registry/repository:tag</i>**
+- `ECSContainerImageGreenName` : **<i>registry/repository:tag</i>**
+- `ECSContainerImageCertName` : **<i>registry/repository:tag</i>**
 - `ECSTaskDefinitionBlueName` : TS-11
 - `ECSTaskDefinitionGreenName` : TS-11
   - [💡Tips: **General purpose 🟢S3 Bucket naming rules**](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html#create-bucket-name-guid) 
@@ -1158,15 +1160,19 @@ This template stores critical infrastructure parameters in **AWS Systems Manager
 ### 🚨Define variables (replace with your values)
 # export STACK_NAME=SSM-PS ; export ACM_CRT_ARN=arn:aws:acm:xxx
 # export ALBLOGS_S3_BUCKET_NAME=alb-access-logs-xxx
+# export APPS_REPO_NAME=debut/apps/caddy-tls ; export APPS_CERT_REPO_NAME=debut/apps/cert-injector
+# export IMAGE_NAME_BLUE="${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${APPS_REPO_NAME:-NULL}:arm64-v1.0.0"
+# export IMAGE_NAME_GREEN="${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${APPS_REPO_NAME:-NULL}:arm64-v2.0.0"
+# export IMAGE_NAME_CERT="${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${APPS_CERT_REPO_NAME:-NULL}/cert-injector:arm64"
 
 ### Deploy SSM P.S.
 # sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --confirm-changeset --save-params \
  --stack-name ${STACK_NAME:-NULL} --config-env ${STACK_NAME} --s3-prefix ${STACK_NAME} -t ${STACK_NAME/-/_}.yaml \
  --parameter-overrides ParameterKey=ACMCertificateArn,ParameterValue=${ACM_CRT_ARN:-NULL} \
  ParameterKey=ALBS3BucketName,ParameterValue=${ALBLOGS_S3_BUCKET_NAME:-NULL} \
- ParameterKey=ECRRepoName,ParameterValue=${APPS_REPO_NAME:-NULL} \
  ParameterKey=ECSContainerImageBlueName,ParameterValue=${IMAGE_NAME_BLUE:-NULL} \
- ParameterKey=ECSContainerImageGreenName,ParameterValue=${IMAGE_NAME_GREEN:-NULL} 
+ ParameterKey=ECSContainerImageGreenName,ParameterValue=${IMAGE_NAME_GREEN:-NULL} \
+ ParameterKey=ECSContainerImageCertName,ParameterValue=${IMAGE_NAME_CERT:-NULL}
 ```
 
 ```bash-session
@@ -1265,7 +1271,7 @@ Deploy this changeset? [y/N]: y
 
 - Get all values
 
-```bash-session
+```ps1
 ### Swich to pwsh from zsh or bash
 # pwsh
 
@@ -1274,7 +1280,7 @@ Deploy this changeset? [y/N]: y
 PS1> $parameterNames = (aws ssm get-parameters-by-path --path /ECSCluster/ --recursive --with-decryption | ConvertFrom-Json).Parameters | Select-Object -ExpandProperty Name
 
 PS1> $batchSize = 10
-for ($i = 0; $i -lt $parameterNames.Count; $i += $batchSize) {
+PS1> for ($i = 0; $i -lt $parameterNames.Count; $i += $batchSize) {
     $batch = $parameterNames[$i..($i + $batchSize - 1)]
     Write-Host "`nFetching parameters: $($batch -join ', ')"
     
@@ -1293,25 +1299,26 @@ PS1> Ctrl+D
 <summary>📖An example of output</summary>
 
 >```ps1
->Name                                    Value
->----                                    -----
->/ECSCluster/ACMCertificateArn           aws:acm:us-west-2:041920240204:certificate/ctfiws-3337-4cbf-bedf-rolyatd1a877
->/ECSCluster/ALB/ALBName                 TS-ALB
->/ECSCluster/ALB/ALBPrefix               alb-access-logs
->/ECSCluster/ALB/S3BucketName            alb-access-logs-6rhsm-ih2cr-zsexs-thgir-syawla-tfiws-rolyat
->/ECSCluster/ECR/RepoName                debut
->/ECSCluster/ECS/Blue/ContainerImageName Unknown-ECS-Container-ImageName-300-takeout-coffees-later
->/ECSCluster/ECS/Blue/ServiceName        TS-ECS-Service-Blue
->/ECSCluster/ECS/Blue/TaskDefinitionName TS-11
->/ECSCluster/ECS/ClusterName             TS-ECS-Cluster
->/ECSCluster/StageName                   Test
->/ECSCluster/ECS/Blue/ContainerName      TTPD-caddy-tls-blue
->/ECSCluster/ECS/Green/ContainerImageNa… Unknown-ECS-Container-ImageName-300-takeout-coffees-later
->/ECSCluster/ECS/Green/ContainerName     TTPD-caddy-tls-green
->/ECSCluster/ECS/Green/ServiceName       TS-ECS-Service-Green
->/ECSCluster/ECS/Green/TaskDefinitionNa… TS-11
->/ECSCluster/VPC/AvailabilityZones       us-west-2a,us-west-2b,us-west-2c,us-west-2d
->/ECSCluster/VPC/VPCName                 TS-VPC
+>Name                                               Value
+>----                                               -----
+>/ECSCluster/ACMCertificateArn                      aws:acm:us-west-2:041920240204:certificate/ctfiws-3337-4cbf-bedf-rolyatd1a877
+>/ECSCluster/ALB/ALBName                            TS-ALB
+>/ECSCluster/ALB/ALBPrefix                          alb-access-logs
+>/ECSCluster/ALB/S3BucketName                       alb-access-logs-6rhsm-ih2cr-zsexs-thgir-syawla-tfiws-rolyat
+>/ECSCluster/ECR/RepoName                           debut
+>/ECSCluster/ECS/Blue/ContainerImageName            041920240204.dkr.ecr.us-west-2.amazonaws.com/debut/apps/caddy-tls:arm64-v1.0.0
+>/ECSCluster/ECS/Blue/ServiceName                   TS-ECS-Service-Blue
+>/ECSCluster/ECS/Blue/TaskDefinitionName            TS-11
+>/ECSCluster/ECS/ClusterName                        TS-ECS-Cluster
+>/ECSCluster/StageName                              Test
+>/ECSCluster/ECS/Blue/ContainerName                 TTPD-caddy-tls-blue
+>/ECSCluster/ECS/CertInjector/ContainerImageName    041920240204.dkr.ecr.us-west-2.amazonaws.com/debut/apps/cert-injector:arm64
+>/ECSCluster/ECS/Green/ContainerImageName           041920240204.dkr.ecr.us-west-2.amazonaws.com/debut/apps/caddy-tls:arm64-v2.0.0
+>/ECSCluster/ECS/Green/ContainerName                TTPD-caddy-tls-green
+>/ECSCluster/ECS/Green/ServiceName                  TS-ECS-Service-Green
+>/ECSCluster/ECS/Green/TaskDefinitionName           TS-11
+>/ECSCluster/VPC/AvailabilityZones                  us-west-2a,us-west-2b,us-west-2c,us-west-2d
+>/ECSCluster/VPC/VPCName                            TS-VPC
 >```
 
 </details>
@@ -1370,8 +1377,9 @@ This template creates a **basic 🟣VPC** with:
 
 ### Deploy Basic Network components and update SSM P.S.
 ### The first time
-# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --capabilities CAPABILITY_AUTO_EXPAND --confirm-changeset --save-params \
- --stack-name ${STACK_NAME:-NULL} --config-env ${STACK_NAME} --s3-prefix ${STACK_NAME} -t ${STACK_NAME/-/_}.yaml
+# sam deploy --s3-bucket ${SAM_CLI_SOURCE_BUCKET} --capabilities CAPABILITY_AUTO_EXPAND \
+  --confirm-changeset --save-params --stack-name ${STACK_NAME:-NULL} --config-env ${STACK_NAME} \
+  --s3-prefix ${STACK_NAME} -t ${STACK_NAME/-/_}.yaml
 
 
   ### After the second

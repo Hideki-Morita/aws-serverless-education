@@ -78,6 +78,11 @@ Parameters:
     Default: Unknown-ECS-Container-ImageName-300-takeout-coffees-later
     Description: "The name of the container image used by the Green ECS service. (Update after image creation)"
 
+  ECSContainerImageCertName:
+    Type: String
+    Default: Unknown-ECS-Container-ImageName-300-takeout-coffees-later
+    Description: "The name of the container image used by the Blue/Green ECS service. (Update after image creation)"
+
   StageName:
     Type: String
     Default: Test
@@ -204,6 +209,14 @@ Resources:
       Value: !Ref ECSContainerImageGreenName
       Description: "The name of the Green ECS container image. (update after deployment if necessary)."
 
+  ECSContainerImageCertNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /ECSCluster/ECS/CertInjector/ContainerImageName
+      Type: String
+      Value: !Ref ECSContainerImageCertName
+      Description: "The name of the CertInjector ECS container image. (update after deployment if necessary)."
+
   StageNameSSM:
     Type: AWS::SSM::Parameter
     Properties:
@@ -272,6 +285,10 @@ Outputs:
   ECSContainerImageGreenName:
     Description: "SSM Parameter storing The name of the Green ECS container image. (Temporary value)"
     Value: !Ref ECSContainerImageGreenNameSSM
+
+  ECSContainerImageCertName:
+    Description: "SSM Parameter storing The name of the CertInjector ECS container image. (Temporary value)"
+    Value: !Ref ECSContainerImageCertNameSSM
 
   StageName:
     Description: "SSM Parameter storing The name of the environment stage."
